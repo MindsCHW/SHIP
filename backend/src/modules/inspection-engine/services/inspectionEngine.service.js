@@ -79,15 +79,38 @@ class InspectionEngineService {
     };
 
     // 7. Prepare Task Data
-    const tasksData = sampledAssets.map(asset => ({
-      project: asset.project,
-      chainage: asset.chainage,
-      assetType: asset.assetType,
-      assetSubType: asset.assetSubType,
-      roadType: asset.roadType,
-      parameters: asset.parameters.map(p => p._id),
-      status: 'PENDING_IMAGE'
-    }));
+    const tasksData = [];
+    sampledAssets.forEach(asset => {
+      // Split the asset's parameters by image requirement
+      const dayParams = asset.parameters.filter(p => (p.imageRequirement || 'DAY') === 'DAY');
+      const nightParams = asset.parameters.filter(p => p.imageRequirement === 'NIGHT');
+
+      if (dayParams.length > 0) {
+        tasksData.push({
+          project: asset.project,
+          chainage: asset.chainage,
+          assetType: asset.assetType,
+          assetSubType: asset.assetSubType,
+          roadType: asset.roadType,
+          imageRequirement: 'DAY',
+          parameters: dayParams.map(p => p._id),
+          status: 'PENDING_IMAGE'
+        });
+      }
+
+      if (nightParams.length > 0) {
+        tasksData.push({
+          project: asset.project,
+          chainage: asset.chainage,
+          assetType: asset.assetType,
+          assetSubType: asset.assetSubType,
+          roadType: asset.roadType,
+          imageRequirement: 'NIGHT',
+          parameters: nightParams.map(p => p._id),
+          status: 'PENDING_IMAGE'
+        });
+      }
+    });
 
     // 7. Save to DB transactionally
     const batch = await inspectionEngineRepository.createBatch(newBatchData, tasksData);

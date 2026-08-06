@@ -89,6 +89,11 @@ class SurveyProcessingService {
           }
         }
 
+        // Match imageRequirement to surveyType
+        const taskReq = task.imageRequirement || 'DAY';
+        const assetReq = a.surveyType || 'DAY';
+        if (taskReq !== assetReq) return false;
+
         return true;
       });
 
@@ -102,6 +107,11 @@ class SurveyProcessingService {
                                    c <= Math.max(a.coverage.startChainage, a.coverage.endChainage);
             if (!matchesChainage) return false;
             if (a.roadType && a.roadType !== 'All Types' && a.roadType !== task.roadType) return false;
+            
+            const taskReq = task.imageRequirement || 'DAY';
+            const assetReq = a.surveyType || 'DAY';
+            if (taskReq !== assetReq) return false;
+
             return true; // Match found regardless of direction
           });
 

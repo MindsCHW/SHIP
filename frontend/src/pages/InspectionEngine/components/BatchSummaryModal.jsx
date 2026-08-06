@@ -14,8 +14,8 @@ const BatchSummaryModal = ({ batchId, onClose }) => {
   const fetchDetails = async () => {
     setLoading(true);
     try {
-      const data = await inspectionEngineService.getBatchDetails(batchId);
-      setBatch(data);
+      const res = await inspectionEngineService.getBatchDetails(batchId);
+      setBatch(res.data || res);
     } catch (err) {
       setError(err.message || 'Failed to load details');
     } finally {
@@ -86,6 +86,7 @@ const BatchSummaryModal = ({ batchId, onClose }) => {
                       <th className="px-4 py-3 font-medium">Chainage</th>
                       <th className="px-4 py-3 font-medium">Category</th>
                       <th className="px-4 py-3 font-medium">Asset Type</th>
+                      <th className="px-4 py-3 font-medium">Image Req</th>
                       <th className="px-4 py-3 font-medium">Questions</th>
                       <th className="px-4 py-3 font-medium">Status</th>
                     </tr>
@@ -96,6 +97,11 @@ const BatchSummaryModal = ({ batchId, onClose }) => {
                         <td className="px-4 py-2 font-medium">{task.chainage}</td>
                         <td className="px-4 py-2 text-gray-600">{task.parameters?.[0]?.category || 'N/A'}</td>
                         <td className="px-4 py-2 text-gray-600">{task.parameters?.[0]?.assetType || 'N/A'}</td>
+                        <td className="px-4 py-2">
+                          <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${task.imageRequirement === 'NIGHT' ? 'bg-indigo-100 text-indigo-700' : 'bg-orange-100 text-orange-700'}`}>
+                            {task.imageRequirement || 'DAY'}
+                          </span>
+                        </td>
                         <td className="px-4 py-2 text-gray-600 font-bold">{task.parameters?.length || 0} Params</td>
                         <td className="px-4 py-2">
                           <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-yellow-100 text-yellow-700">
@@ -105,7 +111,7 @@ const BatchSummaryModal = ({ batchId, onClose }) => {
                       </tr>
                     ))}
                     {batch.tasks?.length === 0 && (
-                      <tr><td colSpan="5" className="text-center py-4 text-gray-500">No tasks generated.</td></tr>
+                      <tr><td colSpan="6" className="text-center py-4 text-gray-500">No tasks generated.</td></tr>
                     )}
                   </tbody>
                 </table>

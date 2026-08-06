@@ -6,11 +6,12 @@ export const surveyLibraryService = {
     return response.data;
   },
 
-  async createAsset(project, assetName, roadDirection, roadType, videoFile, vttFile) {
+  async createAsset(project, assetName, roadDirection, roadType, surveyType, videoFile, vttFile) {
     const formData = new FormData();
     formData.append('assetName', assetName);
     if (roadDirection) formData.append('roadDirection', roadDirection);
     if (roadType) formData.append('roadType', roadType);
+    if (surveyType) formData.append('surveyType', surveyType);
     formData.append('video', videoFile);
     formData.append('vtt', vttFile);
     
@@ -20,11 +21,12 @@ export const surveyLibraryService = {
     return response.data;
   },
 
-  async updateAsset(project, assetId, assetName, roadDirection, roadType, videoFile, vttFile) {
+  async updateAsset(project, assetId, assetName, roadDirection, roadType, surveyType, videoFile, vttFile) {
     const formData = new FormData();
     if (assetName) formData.append('assetName', assetName);
     if (roadDirection) formData.append('roadDirection', roadDirection);
     if (roadType) formData.append('roadType', roadType);
+    if (surveyType) formData.append('surveyType', surveyType);
     if (videoFile) formData.append('video', videoFile);
     if (vttFile) formData.append('vtt', vttFile);
     

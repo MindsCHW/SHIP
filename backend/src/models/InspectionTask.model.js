@@ -51,6 +51,12 @@ const inspectionTaskSchema = new mongoose.Schema(
       required: true,
       index: true
     },
+    imageRequirement: {
+      type: String,
+      enum: ['DAY', 'NIGHT'],
+      default: 'DAY',
+      index: true
+    },
     status: {
       type: String,
       enum: ['PENDING_IMAGE', 'READY_FOR_REVIEW', 'READY_FOR_RATING', 'IN_PROGRESS', 'COMPLETED', 'EXTRACTION_FAILED', 'FAILED', 'REJECTED', 'SKIPPED'],

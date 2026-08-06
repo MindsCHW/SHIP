@@ -35,6 +35,7 @@ const SurveyLibraryPage = () => {
   const [assetName, setAssetName] = useState('');
   const [roadDirection, setRoadDirection] = useState('LHS');
   const [roadType, setRoadType] = useState('All Types');
+  const [surveyType, setSurveyType] = useState('DAY');
   const [videoFile, setVideoFile] = useState(null);
   const [vttFile, setVttFile] = useState(null);
   const [savingAsset, setSavingAsset] = useState(false);
@@ -92,6 +93,7 @@ const SurveyLibraryPage = () => {
     setAssetName('');
     setRoadDirection('LHS');
     setRoadType('All Types');
+    setSurveyType('DAY');
     setVideoFile(null);
     setVttFile(null);
     setModalError('');
@@ -104,6 +106,7 @@ const SurveyLibraryPage = () => {
     setAssetName(asset.assetName);
     setRoadDirection(asset.roadDirection || 'LHS');
     setRoadType(asset.roadType || 'All Types');
+    setSurveyType(asset.surveyType || 'DAY');
     setVideoFile(null); // Clear file selection on edit, meaning keep existing if not changed
     setVttFile(null);
     setModalError('');
@@ -131,10 +134,10 @@ const SurveyLibraryPage = () => {
     setSavingAsset(true);
     try {
       if (modalMode === 'CREATE') {
-        const res = await surveyLibraryService.createAsset(selectedProject, assetName, roadDirection, roadType, videoFile, vttFile);
+        const res = await surveyLibraryService.createAsset(selectedProject, assetName, roadDirection, roadType, surveyType, videoFile, vttFile);
         setAssets(res.data);
       } else {
-        const res = await surveyLibraryService.updateAsset(selectedProject, editingAssetId, assetName, roadDirection, roadType, videoFile, vttFile);
+        const res = await surveyLibraryService.updateAsset(selectedProject, editingAssetId, assetName, roadDirection, roadType, surveyType, videoFile, vttFile);
         setAssets(res.data);
       }
       closeModal();
@@ -448,6 +451,21 @@ const SurveyLibraryPage = () => {
                     {roadTypes.map((rt) => (
                       <option key={rt} value={rt}>{rt}</option>
                     ))}
+                  </select>
+                  <MdKeyboardArrowDown className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-gray-700 mb-1">Survey Type *</label>
+                <div className="relative">
+                  <select
+                    value={surveyType}
+                    onChange={(e) => setSurveyType(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm text-textColor focus:outline-none focus:border-green-600 focus:ring-1 focus:ring-green-600 appearance-none bg-white"
+                  >
+                    <option value="DAY">DAY (Standard)</option>
+                    <option value="NIGHT">NIGHT</option>
                   </select>
                   <MdKeyboardArrowDown className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
                 </div>

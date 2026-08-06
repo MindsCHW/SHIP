@@ -31,6 +31,16 @@ const DashboardPage = () => {
   const selectedProject = searchParams.get('project');
   const coordinates = selectedProject ? projectCoordinates[selectedProject] : null;
 
+  const [analyticsView, setAnalyticsView] = React.useState('Executive Overview');
+  
+  const [globalFilters, setGlobalFilters] = React.useState({
+    search: '',
+    state: '',
+    asset: '',
+    rating: '',
+    time: ''
+  });
+
   const setSelectedProject = (project) => {
     if (project) {
       setSearchParams({ project });
@@ -50,6 +60,10 @@ const DashboardPage = () => {
             <GlobalFilters 
               selectedProject={selectedProject} 
               setSelectedProject={setSelectedProject} 
+              analyticsView={analyticsView}
+              setAnalyticsView={setAnalyticsView}
+              globalFilters={globalFilters}
+              setGlobalFilters={setGlobalFilters}
             />
           </div>
 
@@ -113,6 +127,8 @@ const DashboardPage = () => {
                   </div>
                 </div>
               </div>
+            ) : analyticsView === 'Skip Analytics' ? (
+              <SkipAnalytics selectedProject={selectedProject} globalFilters={globalFilters} />
             ) : (
               // PROJECT SPECIFIC VIEW
               <>
@@ -143,10 +159,6 @@ const DashboardPage = () => {
                   <div className="lg:col-span-1">
                     <InspectorLeaderboard selectedProject={selectedProject} />
                   </div>
-                </div>
-
-                <div className="mb-10">
-                  <SkipAnalytics selectedProject={selectedProject} />
                 </div>
               </>
             )}

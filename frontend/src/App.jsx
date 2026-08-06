@@ -20,6 +20,7 @@ import InspectorApp from './pages/InspectorApp';
 import ProfilePage from './pages/ProfilePage';
 import ReportsPage from './pages/ReportsPage';
 import ShipDashboard from './pages/Ship/ShipDashboard';
+import SkipGalleryPage from './pages/SkipGalleryPage';
 
 function App() {
   return (
@@ -38,6 +39,7 @@ function App() {
       <Route path="/inspection-engine" element={<ProtectedRoute allowedRoles={['Admin', 'Administrator']}><InspectionEnginePage /></ProtectedRoute>} />
       <Route path="/survey-library" element={<ProtectedRoute allowedRoles={['Admin', 'Administrator']}><SurveyLibraryPage /></ProtectedRoute>} />
       <Route path="/survey-processing" element={<ProtectedRoute allowedRoles={['Admin', 'Administrator']}><SurveyProcessingPage /></ProtectedRoute>} />
+      <Route path="/skip-gallery" element={<ProtectedRoute allowedRoles={['Admin', 'Administrator', 'HO', 'SPV', 'User']}><SkipGalleryPage /></ProtectedRoute>} />
       <Route path="/image-review" element={<ProtectedRoute allowedRoles={['Admin', 'Administrator', 'HO']}><ImageReviewPage /></ProtectedRoute>} />
       <Route path="/rating" element={<ProtectedRoute allowedRoles={['Admin', 'Administrator', 'HO', 'SPV', 'User']}><RatingPage /></ProtectedRoute>} />
       <Route path="/rating/inspector/:batchId" element={<ProtectedRoute allowedRoles={['Admin', 'Administrator', 'HO', 'SPV', 'User']}><InspectorApp /></ProtectedRoute>} />

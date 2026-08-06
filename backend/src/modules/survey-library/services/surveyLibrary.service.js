@@ -61,7 +61,7 @@ class SurveyLibraryService {
     };
   }
 
-  async createAsset(project, assetName, roadDirection, roadType, videoFile, vttFile, user) {
+  async createAsset(project, assetName, roadDirection, roadType, surveyType, videoFile, vttFile, user) {
     const existingAsset = await SurveyAsset.findOne({ project, assetName });
     if (existingAsset) {
       throw new Error(`Asset with name ${assetName} already exists in this project.`);
@@ -72,6 +72,7 @@ class SurveyLibraryService {
       assetName,
       roadDirection,
       roadType: roadType || 'All Types',
+      surveyType: surveyType || 'DAY',
       status: 'PARSING_METADATA',
       createdBy: user._id,
       updatedBy: user._id,
@@ -98,7 +99,7 @@ class SurveyLibraryService {
     return await this.getProjectAssets(project);
   }
 
-  async updateAsset(project, assetId, assetName, roadDirection, roadType, videoFile, vttFile, user) {
+  async updateAsset(project, assetId, assetName, roadDirection, roadType, surveyType, videoFile, vttFile, user) {
     const asset = await SurveyAsset.findOne({ _id: assetId, project });
     if (!asset) throw new Error('Asset not found');
 
@@ -114,6 +115,10 @@ class SurveyLibraryService {
 
     if (roadType) {
       asset.roadType = roadType;
+    }
+
+    if (surveyType) {
+      asset.surveyType = surveyType;
     }
 
     let reparseRequired = false;

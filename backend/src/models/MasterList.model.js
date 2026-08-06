@@ -61,6 +61,12 @@ const masterListSchema = new mongoose.Schema(
       enum: ['Active', 'Inactive'],
       default: 'Active',
       index: true
+    },
+    imageRequirement: {
+      type: String,
+      enum: ['DAY', 'NIGHT'],
+      default: 'DAY',
+      index: true
     }
   },
   {

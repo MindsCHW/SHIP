@@ -53,11 +53,13 @@ export const dashboardService = {
 
   getSkipAnalytics: async (projectId = '', filters = {}) => {
     let url = `/dashboard/skip-analytics?projectId=${projectId}`;
-    if (filters.reason) url += `&reason=${encodeURIComponent(filters.reason)}`;
-    if (filters.inspector) url += `&inspector=${encodeURIComponent(filters.inspector)}`;
-    if (filters.assetType) url += `&assetType=${encodeURIComponent(filters.assetType)}`;
-    if (filters.startDate) url += `&startDate=${encodeURIComponent(filters.startDate)}`;
-    if (filters.endDate) url += `&endDate=${encodeURIComponent(filters.endDate)}`;
+    if (filters.asset) url += `&assetType=${encodeURIComponent(filters.asset)}`;
+    
+    if (filters.time) {
+      if (filters.time === 'jan-26') { url += `&startDate=2026-01-01&endDate=2026-01-31`; }
+      else if (filters.time === 'feb-26') { url += `&startDate=2026-02-01&endDate=2026-02-28`; }
+      else if (filters.time === 'jun-26') { url += `&startDate=2026-06-01&endDate=2026-06-30`; }
+    }
     
     const response = await api.get(url);
     return response.data?.data || response.data;

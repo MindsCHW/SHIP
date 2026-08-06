@@ -19,6 +19,12 @@ const SurveyAssetSchema = new mongoose.Schema({
     enum: ['DRAFT', 'UPLOADING', 'PARSING_METADATA', 'READY', 'PROCESSING', 'COMPLETED'], 
     default: 'DRAFT' 
   },
+  surveyType: {
+    type: String,
+    enum: ['DAY', 'NIGHT'],
+    default: 'DAY',
+    index: true
+  },
   
   video: fileSchema,
   vtt: fileSchema,
