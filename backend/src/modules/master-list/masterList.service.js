@@ -83,6 +83,22 @@ class MasterListService {
       // It's valid and unique
       localFileSet.add(dedupKey);
       
+      // Auto-tag Day/Night image requirement based on parameter text and asset type
+      let imageRequirement = 'DAY';
+      const paramLower = parameter.toLowerCase();
+      
+      if (assetType.toLowerCase().includes('pavement markings') && paramLower.includes('night visibility')) {
+        imageRequirement = 'NIGHT';
+      } else if (assetType.toLowerCase().includes('signages') && paramLower.includes('retro reflectivity')) {
+        imageRequirement = 'NIGHT';
+      } else if (assetType.toLowerCase().includes('traffic blinkers and signals') && paramLower.includes('functional condition')) {
+        imageRequirement = 'NIGHT';
+      } else if (assetType.toLowerCase().includes('lightings') && paramLower.includes('functional condition')) {
+        imageRequirement = 'NIGHT';
+      } else if (assetType.toLowerCase().includes('delineators') && paramLower.includes('functional condition')) {
+        imageRequirement = 'NIGHT';
+      }
+
       validDocsToInsert.push({
         project: projectName,
         category,
@@ -93,6 +109,7 @@ class MasterListService {
         roadType,
         direction,
         placement,
+        imageRequirement,
         questionId: `Q-${Date.now()}-${Math.floor(Math.random() * 100000)}-${validDocsToInsert.length}`, // Auto-generate with guaranteed uniqueness
         status: 'Active'
       });

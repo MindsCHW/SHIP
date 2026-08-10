@@ -5,8 +5,12 @@ class MasterListRepository {
     const query = {};
 
     if (filters.project) query.project = filters.project;
-    if (filters.category) query.category = filters.category;
-    if (filters.assetType) query.assetType = filters.assetType;
+    if (filters.category) {
+      query.category = Array.isArray(filters.category) ? { $in: filters.category } : filters.category;
+    }
+    if (filters.assetType) {
+      query.assetType = Array.isArray(filters.assetType) ? { $in: filters.assetType } : filters.assetType;
+    }
     if (filters.status) query.status = filters.status;
 
     return MasterList.find(query).select('-__v').sort({ createdAt: -1 }).lean();
@@ -16,12 +20,18 @@ class MasterListRepository {
     return MasterList.distinct('project');
   }
 
-  async getCategories() {
-    return MasterList.distinct('category');
+  async getCategories(project) {
+    const query = project ? { project } : {};
+    return MasterList.distinct('category', query);
   }
 
-  async getAssetTypes() {
-    return MasterList.distinct('assetType');
+  async getAssetTypes(filters = {}) {
+    const query = {};
+    if (filters.project) query.project = filters.project;
+    if (filters.categories) {
+      query.category = Array.isArray(filters.categories) ? { $in: filters.categories } : filters.categories;
+    }
+    return MasterList.distinct('assetType', query);
   }
 
   async getRoadTypes(project) {

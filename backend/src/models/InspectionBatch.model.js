@@ -15,11 +15,14 @@ const inspectionBatchSchema = new mongoose.Schema(
       trim: true,
       index: true
     },
-    category: {
+    categories: [{
       type: String,
-      trim: true,
-      default: null
-    },
+      trim: true
+    }],
+    assetTypes: [{
+      type: String,
+      trim: true
+    }],
     samplingPercentage: {
       type: Number,
       required: true
@@ -60,6 +63,10 @@ const inspectionBatchSchema = new mongoose.Schema(
       type: Date
     },
     reviewCompleted: {
+      type: Boolean,
+      default: false
+    },
+    isSamplingHistoryReset: {
       type: Boolean,
       default: false
     }

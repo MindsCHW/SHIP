@@ -139,9 +139,22 @@ const ImageReviewDetailModal = ({ batch, onClose }) => {
                     <div className="grid grid-cols-2 gap-y-2 gap-x-4 mb-4">
                       <div><span className="text-gray-500">Chainage:</span> <strong className="text-gray-900">{task.chainage}</strong></div>
                       <div><span className="text-gray-500">Params:</span> <strong className="text-gray-900">{task.parameters?.length || 0}</strong></div>
+                      <div><span className="text-gray-500">Road Type:</span> <strong className="text-gray-900">{task.roadType || '-'}</strong></div>
+                      <div>
+                        <span className="text-gray-500">Img Req:</span>{' '}
+                        <strong className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${task.imageRequirement === 'NIGHT' ? 'bg-indigo-100 text-indigo-700' : 'bg-orange-100 text-orange-700'}`}>
+                          {task.imageRequirement || 'DAY'}
+                        </strong>
+                      </div>
                       <div className="col-span-2 text-xs text-gray-500 truncate">
                         {task.metadata?.extractedAt || 'Unknown Timestamp'}
                       </div>
+                      {task.status === 'EXTRACTION_FAILED' && task.extractionDiagnostics?.failureReason && (
+                        <div className="col-span-2 mt-2 p-2 bg-red-50 text-red-600 rounded text-xs border border-red-100 whitespace-pre-wrap break-words">
+                          <span className="font-semibold block mb-1">Failure Reason:</span>
+                          {task.extractionDiagnostics.failureReason}
+                        </div>
+                      )}
                     </div>
                     
                     {/* Actions */}

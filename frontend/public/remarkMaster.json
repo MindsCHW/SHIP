@@ -1,0 +1,45 @@
+{
+  "Roadway": [
+    "Cracks",
+    "Rutting",
+    "Bleeding",
+    "Ravelling",
+    "Faded",
+    "Due to Unevenness",
+    "Due to Vegetation",
+    "Edge Drop",
+    "Pothole",
+    "Patching",
+    "Due to Dust"
+  ],
+  "Structures": [
+    "No Structure Numbering",
+    "Due to Settlement",
+    "Cracks",
+    "Rutting",
+    "Ravelling",
+    "Patching",
+    "Pothole",
+    "Bleeding"
+  ],
+  "Road Signage and Furniture": [
+    "Due to Trees",
+    "Due to Median Plantation",
+    "Due to Soil",
+    "Due to Dust",
+    "Damaged",
+    "Bent",
+    "Faded",
+    "No Reflectivity",
+    "Not Working",
+    "No Numbering",
+    "Improper Fixing Plates",
+    "Missing"
+  ],
+  "Landscaping": [
+    "Due to Pruning",
+    "Unhealthy",
+    "Due to Grass",
+    "Due to Soil"
+  ]
+}

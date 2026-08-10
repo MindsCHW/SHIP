@@ -1,0 +1,81 @@
+{
+  "actionImpactRules": [
+    {
+      "action": "Repair Drainage",
+      "affectedAssets": ["Drainage", "Culvert"],
+      "downstreamBenefits": [
+        { "asset": "Shoulder", "ratingImprovementFactor": 0.6, "rationale": "Dry shoulders structurally recover faster" },
+        { "asset": "Roadway", "ratingImprovementFactor": 0.4, "rationale": "Reduced water ingress reduces cracking" },
+        { "asset": "Embankment", "ratingImprovementFactor": 0.3, "rationale": "Slope erosion slows down with proper drainage" }
+      ],
+      "estimatedTimeWeeks": 4,
+      "priority": "Critical"
+    },
+    {
+      "action": "Vegetation Management",
+      "affectedAssets": ["Vegetation"],
+      "downstreamBenefits": [
+        { "asset": "Road Signage & Furniture", "ratingImprovementFactor": 0.7, "rationale": "Signage obstruction cleared" },
+        { "asset": "Drainage", "ratingImprovementFactor": 0.4, "rationale": "Drains unblocked by root removal" },
+        { "asset": "Lighting", "ratingImprovementFactor": 0.3, "rationale": "Overhanging branches removed" }
+      ],
+      "estimatedTimeWeeks": 2,
+      "priority": "High"
+    },
+    {
+      "action": "Repair Shoulder",
+      "affectedAssets": ["Shoulder"],
+      "downstreamBenefits": [
+        { "asset": "Roadway", "ratingImprovementFactor": 0.5, "rationale": "Edge support stabilises pavement" },
+        { "asset": "Ride Quality", "ratingImprovementFactor": 0.4, "rationale": "Smooth shoulder transitions reduce vehicle damage" }
+      ],
+      "estimatedTimeWeeks": 3,
+      "priority": "High"
+    },
+    {
+      "action": "Complete Skipped Inspections",
+      "affectedAssets": [],
+      "downstreamBenefits": [
+        { "asset": "Overall Coverage", "ratingImprovementFactor": 1.0, "rationale": "Full data coverage improves accuracy of risk scoring" },
+        { "asset": "Risk Score", "ratingImprovementFactor": 0.3, "rationale": "Blind spots eliminated" }
+      ],
+      "estimatedTimeWeeks": 1,
+      "priority": "High"
+    },
+    {
+      "action": "Rectify All Rating-1 Assets",
+      "affectedAssets": [],
+      "downstreamBenefits": [
+        { "asset": "Overall Rating", "ratingImprovementFactor": 0.8, "rationale": "Critical failures have outsized negative effect on averages" },
+        { "asset": "Risk Score", "ratingImprovementFactor": 0.6, "rationale": "Removes the highest-risk items" }
+      ],
+      "estimatedTimeWeeks": 6,
+      "priority": "Critical"
+    },
+    {
+      "action": "Repair Expansion Joints",
+      "affectedAssets": ["Expansion Joint"],
+      "downstreamBenefits": [
+        { "asset": "Structures", "ratingImprovementFactor": 0.5, "rationale": "Joint failure accelerates structural deterioration" },
+        { "asset": "Roadway", "ratingImprovementFactor": 0.3, "rationale": "Prevents surface cracking at joint edges" }
+      ],
+      "estimatedTimeWeeks": 5,
+      "priority": "Critical"
+    },
+    {
+      "action": "Road Markings Refresh",
+      "affectedAssets": ["Road Markings"],
+      "downstreamBenefits": [
+        { "asset": "Road Safety", "ratingImprovementFactor": 0.6, "rationale": "Improved driver guidance reduces incidents" }
+      ],
+      "estimatedTimeWeeks": 1,
+      "priority": "Medium"
+    }
+  ],
+  "resourceAssumptions": {
+    "hoursPerCriticalIssue": 4,
+    "hoursPerTeamPerDay": 8,
+    "teamSize": 5,
+    "workingDaysPerWeek": 6
+  }
+}

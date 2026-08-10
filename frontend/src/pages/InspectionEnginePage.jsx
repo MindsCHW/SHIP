@@ -10,6 +10,9 @@ const InspectionEnginePage = () => {
   const [batches, setBatches] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedBatchId, setSelectedBatchId] = useState(null);
+  
+  const [showAllInspectedModal, setShowAllInspectedModal] = useState(false);
+  const [pendingBatchData, setPendingBatchData] = useState(null);
 
   const fetchBatches = async () => {
     setLoading(true);
@@ -28,10 +31,43 @@ const InspectionEnginePage = () => {
   }, []);
 
   const handleBatchCreated = async (batchData) => {
-    const res = await inspectionEngineService.createBatch(batchData);
-    if (res.success) {
-      await fetchBatches();
-      setSelectedBatchId(res.data._id); // Auto-open modal to show summary
+    try {
+      const res = await inspectionEngineService.createBatch(batchData);
+      if (res.success) {
+        await fetchBatches();
+        setSelectedBatchId(res.data._id); // Auto-open modal to show summary
+      }
+    } catch (err) {
+      if (err.response?.data?.code === 'ALL_INSPECTED') {
+        setPendingBatchData(batchData);
+        setShowAllInspectedModal(true);
+      }
+      throw err;
+    }
+  };
+
+  const handleRetryBatch = async (options) => {
+    if (!pendingBatchData) return;
+    
+    setShowAllInspectedModal(false);
+    
+    // We recreate the batch directly with the new options
+    const newPayload = {
+      ...pendingBatchData,
+      excludePreviouslyInspected: false,
+      resetHistory: options.resetHistory || false
+    };
+    
+    try {
+      // Create manually without form's error handling
+      const res = await inspectionEngineService.createBatch(newPayload);
+      if (res.success) {
+        await fetchBatches();
+        setSelectedBatchId(res.data._id);
+        setPendingBatchData(null);
+      }
+    } catch (err) {
+      alert(err.response?.data?.message || err.message || 'Failed to create batch');
     }
   };
 
@@ -77,6 +113,42 @@ const InspectionEnginePage = () => {
             batchId={selectedBatchId} 
             onClose={() => setSelectedBatchId(null)} 
           />
+        )}
+
+        {/* All Inspected Modal */}
+        {showAllInspectedModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+            <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6">
+              <h3 className="text-xl font-bold text-gray-900 mb-2">Sampling Complete</h3>
+              <p className="text-gray-600 mb-6">
+                All Master List questions for this project have already been inspected.
+              </p>
+              
+              <div className="flex flex-col gap-3">
+                <button
+                  onClick={() => handleRetryBatch({ resetHistory: true })}
+                  className="w-full py-2.5 px-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors"
+                >
+                  Start New Inspection History (Reset)
+                </button>
+                <button
+                  onClick={() => handleRetryBatch({ resetHistory: false })}
+                  className="w-full py-2.5 px-4 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 font-medium transition-colors"
+                >
+                  Allow Duplicate Questions
+                </button>
+                <button
+                  onClick={() => {
+                    setShowAllInspectedModal(false);
+                    setPendingBatchData(null);
+                  }}
+                  className="w-full py-2.5 px-4 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-medium transition-colors mt-2"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
         )}
         
       </div>

@@ -8,20 +8,7 @@ import { ratingService } from '../services/rating.service';
 import leftArrowImg from '../assets/leftarrow.PNG';
 import rightArrowImg from '../assets/rightarrow.PNG';
 
-const REMARK_OPTIONS = [
-  'Rectified',
-  'Not Rectified',
-  'Due to crack',
-  'Due to rutting',
-  'Due to pothole',
-  'Minor Damage',
-  'Major Damage',
-  'Needs Cleaning',
-  'Missing',
-  'Requires Replacement',
-  'Good Condition'
-];
-
+// REMARK_OPTIONS removed in favor of dynamic JSON config
 const SKIP_REASONS = [
   'Image does not match Chainage',
   'Wrong Survey Image',
@@ -73,6 +60,14 @@ const InspectorApp = () => {
   const [skipReason, setSkipReason] = useState('');
   const [skipRemarks, setSkipRemarks] = useState('');
   const [skipping, setSkipping] = useState(false);
+  const [remarkMasterConfig, setRemarkMasterConfig] = useState({});
+
+  useEffect(() => {
+    fetch('/remarkMaster.json')
+      .then(res => res.json())
+      .then(data => setRemarkMasterConfig(data))
+      .catch(err => console.error('Failed to load remarkMaster.json', err));
+  }, []);
 
   useEffect(() => {
     fetchTasks();
@@ -246,6 +241,11 @@ const InspectorApp = () => {
     if (!isEditMode) return;
     setExpandedCard(prev => (prev === cardKey ? null : cardKey));
   };
+
+  // Dynamic Remarks Calculation
+  const currentCategory = firstParam.category || 'N/A';
+  const categoryRemarks = remarkMasterConfig[currentCategory] || [];
+  const dynamicRemarkOptions = [...categoryRemarks, 'Other'];
 
   const images = [];
   if (currentTask?.image?.cloudinaryUrl) {
@@ -484,7 +484,7 @@ const InspectorApp = () => {
                       })}
                     </div>
                     <div className="flex-1 w-full">
-                      {customRemarkMode[param._id] || (rating.remark && !REMARK_OPTIONS.includes(rating.remark)) ? (
+                      {customRemarkMode[param._id] || (rating.remark && !dynamicRemarkOptions.includes(rating.remark) && rating.remark !== 'Other') ? (
                         <div className="flex items-center gap-2">
                           <input
                             type="text"
@@ -507,7 +507,7 @@ const InspectorApp = () => {
                         </div>
                       ) : (
                         <CustomDropdown
-                          options={[...REMARK_OPTIONS, 'Other']}
+                          options={dynamicRemarkOptions}
                           value={rating.remark}
                           onChange={(val) => {
                             if (val === 'Other') {

@@ -15,6 +15,7 @@ import AnalyticsCharts from '../components/dashboard/AnalyticsCharts';
 import InspectorLeaderboard from '../components/dashboard/InspectorLeaderboard';
 import RecentActivityTimeline from '../components/dashboard/RecentActivityTimeline';
 import SkipAnalytics from '../components/dashboard/SkipAnalytics';
+import InspectionComparison from '../components/dashboard/comparison/InspectionComparison';
 import LogoCarousel from '../components/dashboard/LogoCarousel';
 import AllProjectsMap from '../components/dashboard/AllProjectsMap';
 
@@ -129,6 +130,8 @@ const DashboardPage = () => {
               </div>
             ) : analyticsView === 'Skip Analytics' ? (
               <SkipAnalytics selectedProject={selectedProject} globalFilters={globalFilters} />
+            ) : analyticsView === 'Inspection Comparison' ? (
+              <InspectionComparison selectedProject={selectedProject} globalFilters={globalFilters} />
             ) : (
               // PROJECT SPECIFIC VIEW
               <>

@@ -1,150 +1,157 @@
 import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { MdDashboard, MdBusiness, MdTimeline, MdWarning, MdInsights } from 'react-icons/md';
 import Sidebar from '../../components/Sidebar';
 import Navbar from '../../components/Navbar';
-import ExecutiveOverview from '../../components/Ship/ExecutiveOverview';
-import ProjectIntelligence from '../../components/Ship/ProjectIntelligence';
-import { shipService } from '../../services/ship.service';
 import { useAuth } from '../../hooks/useAuth';
+import { shipService } from '../../services/ship.service';
+import { dashboardService } from '../../services/dashboard.service';
+
+// Phase 1 components
+import GlobalHealth from '../../components/Ship/GlobalHealth';
+import ProjectIntelligence from '../../components/Ship/ProjectIntelligence';
+import AssetIntelligence from '../../components/Ship/AssetIntelligence';
+import GeographicIntelligence from '../../components/Ship/GeographicIntelligence';
+import ExecutiveInsights from '../../components/Ship/ExecutiveInsights';
+
+// Phase 2 component
+import RelationshipIntelligence from '../../components/Ship/RelationshipIntelligence';
+
+// Phase 3 component
+import SpatialIntelligence from '../../components/Ship/SpatialIntelligence';
+
+// Phase 4 component
+import TemporalIntelligence from '../../components/Ship/TemporalIntelligence';
+
+// Phase 5 component
+import DecisionIntelligence from '../../components/Ship/DecisionIntelligence';
+
+import {
+  MdNetworkCheck,
+  MdHub,
+} from 'react-icons/md';
 
 const TABS = [
-  { id: 'overview', label: 'Executive Overview', icon: MdDashboard },
-  { id: 'projects', label: 'Project Intelligence', icon: MdBusiness },
-  { id: 'assets', label: 'Asset Intelligence', icon: MdTimeline },
-  { id: 'risks', label: 'Risk Intelligence', icon: MdWarning },
-  { id: 'insights', label: 'Dynamic Insights', icon: MdInsights },
+  { id: 'executive',    label: 'Executive Intelligence' },
+  { id: 'relationship', label: 'Relationship Intelligence' },
+  { id: 'spatial',      label: 'Spatial Intelligence' },
+  { id: 'temporal',     label: 'Temporal Intelligence' },
+  { id: 'decision',     label: 'Decision Intelligence' },
 ];
 
 const ShipDashboard = () => {
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState('overview');
-  const [overviewData, setOverviewData] = useState(null);
-  const [projectsData, setProjectsData] = useState(null);
+  const [activeTab, setActiveTab] = useState('executive');
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    fetchData();
-  }, [activeTab]);
+  const [overviewData, setOverviewData] = useState(null);
+  const [projectsData, setProjectsData] = useState([]);
+  const [chartsData, setChartsData] = useState(null);
+  const [mapData, setMapData] = useState(null);
 
-  const fetchData = async () => {
-    setLoading(true);
-    try {
-      if (activeTab === 'overview' && !overviewData) {
-        const data = await shipService.getOverview();
-        setOverviewData(data);
-      } else if (activeTab === 'projects' && !projectsData) {
-        const data = await shipService.getProjects();
-        setProjectsData(data);
+  useEffect(() => {
+    const fetchAllIntelligence = async () => {
+      setLoading(true);
+      try {
+        const [overview, projects, charts, map] = await Promise.all([
+          shipService.getOverview(),
+          shipService.getProjects(),
+          dashboardService.getChartsData(''),
+          dashboardService.getMapData('')
+        ]);
+        setOverviewData(overview);
+        setProjectsData(projects);
+        setChartsData(charts);
+        setMapData(map);
+      } catch (error) {
+        console.error('Failed to fetch SHIP Intelligence', error);
+      } finally {
+        setLoading(false);
       }
-      // other tabs would fetch here in Phase 2
-    } catch (err) {
-      console.error('Failed to fetch SHIP data', err);
-    } finally {
-      setLoading(false);
-    }
-  };
+    };
+    fetchAllIntelligence();
+  }, []);
 
   return (
-    <div className="flex h-screen bg-gray-50/50">
+    <div className="flex h-screen bg-[#FDFDFD]">
       <Sidebar />
       <div className="flex-1 flex flex-col h-screen overflow-hidden">
         <Navbar user={user} />
-        
-        <main className="flex-1 overflow-y-auto p-8 relative">
-          {/* Header */}
-          <div className="mb-8">
-            <h1 className="text-4xl font-extrabold text-gray-900 tracking-tight flex items-center gap-3">
-              <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600">SHIP</span>
-              <span className="text-gray-300 text-3xl font-light">|</span>
-              <span className="text-2xl text-gray-600 font-medium tracking-normal mt-1">Intelligence Platform</span>
-            </h1>
-            <p className="text-gray-500 mt-2">Executive analytics and dynamic insights.</p>
-          </div>
 
-          {/* Navigation Tabs */}
-          <div className="flex space-x-1 bg-gray-200/50 p-1 rounded-xl w-fit mb-8 border border-gray-200 backdrop-blur-md">
-            {TABS.map((tab) => {
-              const Icon = tab.icon;
-              const isActive = activeTab === tab.id;
-              return (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`relative flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 ease-out ${
-                    isActive ? 'text-blue-700' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-200'
-                  }`}
-                >
-                  {isActive && (
-                    <motion.div
-                      layoutId="shipTabIndicator"
-                      className="absolute inset-0 bg-white rounded-lg shadow-sm"
-                      transition={{ type: 'spring', bounce: 0.2, duration: 0.6 }}
-                    />
-                  )}
-                  <span className="relative z-10 flex items-center gap-2">
-                    <Icon className={`w-4 h-4 ${isActive ? 'text-blue-600' : 'text-gray-400'}`} />
-                    {tab.label}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-
-          {/* Content Area */}
-          <div className="relative min-h-[400px]">
-            {loading ? (
-              <div className="absolute inset-0 flex items-center justify-center bg-gray-50/50 backdrop-blur-sm z-10 rounded-2xl">
-                <div className="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+        <main className="flex-1 overflow-y-auto">
+          {loading && activeTab === 'executive' && (
+            <div className="absolute inset-0 flex items-center justify-center bg-white/80 backdrop-blur-sm z-50 pointer-events-none">
+              <div className="flex flex-col items-center">
+                <div className="w-12 h-12 border-4 border-green-600 border-t-transparent rounded-full animate-spin mb-4"></div>
+                <p className="text-gray-500 font-medium tracking-wider uppercase text-sm">Aggregating Intelligence...</p>
               </div>
-            ) : null}
+            </div>
+          )}
 
-            <AnimatePresence mode="wait">
-              {activeTab === 'overview' && (
-                <motion.div
-                  key="overview"
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -10 }}
-                  transition={{ duration: 0.2 }}
-                >
-                  <ExecutiveOverview data={overviewData} />
-                </motion.div>
-              )}
+          {/* Top Header + Tab Navigation */}
+          <div className="border-b border-gray-200 bg-white sticky top-0 z-30">
+            <div className="max-w-[1600px] mx-auto px-10 pt-8 pb-0">
+              <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight flex items-center gap-4 mb-5">
+                <span className="text-green-700">SHIP</span>
+                <span className="text-gray-200 text-2xl font-light">|</span>
+                <span className="text-xl text-gray-700 font-medium tracking-normal">Smart Highway Intelligence Platform</span>
+              </h1>
 
-              {activeTab === 'projects' && (
-                <motion.div
-                  key="projects"
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -10 }}
-                  transition={{ duration: 0.2 }}
-                >
+              {/* Tabs */}
+              <div className="flex gap-0">
+                {TABS.map(tab => (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id)}
+                    className={`relative px-6 py-3 text-sm font-bold transition-colors ${
+                      activeTab === tab.id
+                        ? 'text-green-700 border-b-2 border-green-600'
+                        : 'text-gray-500 hover:text-gray-800 border-b-2 border-transparent'
+                    }`}
+                  >
+                    {tab.label}
+
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Tab Content */}
+          <div className="max-w-[1600px] mx-auto px-10 py-12">
+            {activeTab === 'executive' && !loading && (
+              <div className="space-y-16">
+                <section>
+                  <GlobalHealth data={overviewData} />
+                </section>
+                <section>
+                  <ExecutiveInsights overview={overviewData} projects={projectsData} charts={chartsData} />
+                </section>
+                <section>
                   <ProjectIntelligence projects={projectsData} />
-                </motion.div>
-              )}
+                </section>
+                <section>
+                  <AssetIntelligence chartsData={chartsData} />
+                </section>
+                <section>
+                  <GeographicIntelligence mapData={mapData} />
+                </section>
+              </div>
+            )}
 
-              {['assets', 'risks', 'insights'].includes(activeTab) && (
-                <motion.div
-                  key="coming-soon"
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -10 }}
-                  transition={{ duration: 0.2 }}
-                  className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 flex items-center justify-center min-h-[400px]"
-                >
-                  <div className="text-center">
-                    <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                      <span className="text-2xl font-bold text-gray-400">P2</span>
-                    </div>
-                    <h3 className="text-xl font-bold text-gray-900">Module Under Construction</h3>
-                    <p className="text-gray-500 mt-2 max-w-md mx-auto">
-                      This intelligence view is being actively developed and will be available shortly.
-                    </p>
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
+            {activeTab === 'relationship' && (
+              <RelationshipIntelligence projects={projectsData} />
+            )}
+
+            {activeTab === 'spatial' && (
+              <SpatialIntelligence projects={projectsData} />
+            )}
+
+            {activeTab === 'temporal' && (
+              <TemporalIntelligence projects={projectsData} />
+            )}
+
+            {activeTab === 'decision' && (
+              <DecisionIntelligence projects={projectsData} />
+            )}
           </div>
         </main>
       </div>

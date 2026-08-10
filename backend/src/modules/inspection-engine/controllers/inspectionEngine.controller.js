@@ -4,9 +4,20 @@ const inspectionEngineService = require('../services/inspectionEngine.service');
 const { successResponse } = require('../../../utils/response.util');
 const asyncHandler = require('../../../utils/asyncHandler.util');
 
-const createBatch = asyncHandler(async (req, res) => {
-  const batch = await inspectionEngineService.createBatch(req.user._id, req.body);
-  return successResponse(res, batch, 'Inspection batch created successfully', 201);
+const createBatch = asyncHandler(async (req, res, next) => {
+  try {
+    const batch = await inspectionEngineService.createBatch(req.user._id, req.body);
+    return successResponse(res, batch, 'Inspection batch created successfully', 201);
+  } catch (error) {
+    if (error.code === 'ALL_INSPECTED') {
+      return res.status(409).json({
+        success: false,
+        code: 'ALL_INSPECTED',
+        message: error.message
+      });
+    }
+    next(error);
+  }
 });
 
 const listBatches = asyncHandler(async (req, res) => {

@@ -6,7 +6,15 @@ const SamplingStrategyFactory = require('./strategies/samplingStrategyFactory');
 
 class InspectionEngineService {
   async createBatch(userId, batchData) {
-    const { project, samplingPercentage, samplingStrategy = 'RANDOM', category } = batchData;
+    const { 
+      project, 
+      samplingPercentage, 
+      samplingStrategy = 'RANDOM', 
+      categories,
+      assetTypes,
+      excludePreviouslyInspected = true, 
+      resetHistory = false 
+    } = batchData;
 
     if (!project) throw new Error('Project is required to create a batch');
     if (!samplingPercentage || samplingPercentage <= 0 || samplingPercentage > 100) {
@@ -15,12 +23,28 @@ class InspectionEngineService {
 
     // 1. Fetch Master List for this project (Active questions only)
     const filter = { project, status: 'Active' };
-    if (category) filter.category = category;
+    if (categories && categories.length > 0) filter.category = categories;
+    if (assetTypes && assetTypes.length > 0) filter.assetType = assetTypes;
 
-    const masterListPopulation = await masterListRepository.getMasterList(filter);
+    let masterListPopulation = await masterListRepository.getMasterList(filter);
 
     if (!masterListPopulation || masterListPopulation.length === 0) {
-      throw new Error(`No active master list questions found for project: ${project}${category ? ` and category: ${category}` : ''}`);
+      throw new Error(`No active master list questions found for project: ${project}${categories ? ` and selected categories/assets` : ''}`);
+    }
+
+    // 1.5 Exclude previously inspected questions if requested
+    if (excludePreviouslyInspected) {
+      const previouslyInspectedIds = await inspectionEngineRepository.getPreviouslyInspectedMasterListIds(project);
+      
+      if (previouslyInspectedIds.length > 0) {
+        masterListPopulation = masterListPopulation.filter(q => !previouslyInspectedIds.includes(q._id.toString()));
+      }
+
+      if (masterListPopulation.length === 0) {
+        const err = new Error('All Master List questions for this project have already been inspected.');
+        err.code = 'ALL_INSPECTED';
+        throw err;
+      }
     }
 
     // 2. Select Sampling Strategy
@@ -68,14 +92,16 @@ class InspectionEngineService {
     const newBatchData = {
       name,
       project,
-      category: category || null,
+      categories: categories || [],
+      assetTypes: assetTypes || [],
       samplingPercentage,
       samplingStrategy,
       totalMasterQuestions: masterListPopulation.length,
       selectedQuestionsCount,
       uniqueChainagesCount: uniqueChainages.size,
       status: 'WAITING_FOR_IMAGES',
-      createdBy: userId
+      createdBy: userId,
+      isSamplingHistoryReset: resetHistory
     };
 
     // 7. Prepare Task Data

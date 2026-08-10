@@ -18,6 +18,14 @@ const CloneRatingPage = ({ rowData = {}, config }) => {
   const [isLargeScreen, setIsLargeScreen] = useState(false);
   const [pageActiveImages, setPageActiveImages] = useState({});
   const [expandedCard, setExpandedCard] = useState(null);
+  const [remarkMasterConfig, setRemarkMasterConfig] = useState({});
+
+  useEffect(() => {
+    fetch('/remarkMaster.json')
+      .then(res => res.json())
+      .then(data => setRemarkMasterConfig(data))
+      .catch(err => console.error('Failed to load remarkMaster.json', err));
+  }, []);
 
   const [globalReviewData, setGlobalReviewData] = useState({});
 
@@ -111,7 +119,9 @@ const CloneRatingPage = ({ rowData = {}, config }) => {
   const remarks = currentData.remarks;
   const headerRemarks = currentData.headerRemarks;
 
-  const remarkOptions = ['Due to crack', 'Due to rutting', 'Due to pothole'];
+  const currentCategory = rowData.category || 'N/A';
+  const categoryRemarks = remarkMasterConfig[currentCategory] || [];
+  const remarkOptions = [...categoryRemarks, 'Other'];
 
   const toggleEditMode = () => {
     setIsEditMode(!isEditMode);

@@ -11,13 +11,18 @@ export const masterListService = {
     return response.data;
   },
 
-  async getCategories() {
-    const response = await api.get('/master/categories');
+  async getCategories(project) {
+    const params = {};
+    if (project) params.project = project;
+    const response = await api.get('/master/categories', { params });
     return response.data;
   },
 
-  async getAssetTypes() {
-    const response = await api.get('/master/assets');
+  async getAssetTypes(project, categories) {
+    const params = {};
+    if (project) params.project = project;
+    if (categories && categories.length > 0) params.categories = categories;
+    const response = await api.get('/master/assets', { params });
     return response.data;
   },
 

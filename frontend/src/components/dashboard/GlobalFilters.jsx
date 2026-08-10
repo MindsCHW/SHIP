@@ -11,7 +11,8 @@ const GlobalFilters = ({ selectedProject, setSelectedProject, analyticsView, set
 
   const viewOptions = [
     { label: 'Executive Overview', value: 'Executive Overview' },
-    { label: 'Skip Analytics', value: 'Skip Analytics' }
+    { label: 'Skip Analytics', value: 'Skip Analytics' },
+    { label: 'Inspection Comparison', value: 'Inspection Comparison' }
   ];
 
   const stateOptions = [

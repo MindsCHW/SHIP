@@ -1,0 +1,19 @@
+{
+  "dependencies": [
+    { "from": "Drainage", "to": "Shoulder", "effect": "affects", "strength": "high" },
+    { "from": "Shoulder", "to": "Roadway", "effect": "affects", "strength": "high" },
+    { "from": "Roadway", "to": "Ride Quality", "effect": "affects", "strength": "high" },
+    { "from": "Vegetation", "to": "Road Signage & Furniture", "effect": "obstructs", "strength": "medium" },
+    { "from": "Vegetation", "to": "Drainage", "effect": "blocks", "strength": "medium" },
+    { "from": "Expansion Joint", "to": "Structures", "effect": "weakens", "strength": "high" },
+    { "from": "Structures", "to": "Roadway", "effect": "supports", "strength": "high" },
+    { "from": "Signages", "to": "Road Safety", "effect": "affect", "strength": "high" },
+    { "from": "Lighting", "to": "Night Visibility", "effect": "affects", "strength": "high" },
+    { "from": "Lighting", "to": "Road Safety", "effect": "affects", "strength": "medium" },
+    { "from": "Pavement", "to": "Ride Quality", "effect": "determines", "strength": "high" },
+    { "from": "Embankment", "to": "Shoulder", "effect": "supports", "strength": "medium" },
+    { "from": "Slope Protection", "to": "Embankment", "effect": "protects", "strength": "high" },
+    { "from": "Culvert", "to": "Drainage", "effect": "enables", "strength": "high" },
+    { "from": "Road Markings", "to": "Road Safety", "effect": "guides", "strength": "medium" }
+  ]
+}

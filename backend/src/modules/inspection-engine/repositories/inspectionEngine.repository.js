@@ -81,6 +81,29 @@ class InspectionEngineRepository {
     
     return tasks;
   }
+
+  async getPreviouslyInspectedMasterListIds(project) {
+    const lastResetBatch = await InspectionBatch.findOne({ 
+      project, 
+      isSamplingHistoryReset: true 
+    }).sort({ createdAt: -1 }).lean();
+
+    const taskQuery = { project };
+    if (lastResetBatch) {
+      taskQuery.createdAt = { $gte: lastResetBatch.createdAt };
+    }
+
+    const tasks = await InspectionTask.find(taskQuery).select('parameters').lean();
+
+    const inspectedIds = new Set();
+    tasks.forEach(task => {
+      if (task.parameters && Array.isArray(task.parameters)) {
+        task.parameters.forEach(p => inspectedIds.add(p.toString()));
+      }
+    });
+
+    return Array.from(inspectedIds);
+  }
 }
 
 module.exports = new InspectionEngineRepository();

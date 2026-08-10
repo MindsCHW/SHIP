@@ -13,12 +13,13 @@ const getProjects = asyncHandler(async (req, res) => {
 });
 
 const getCategories = asyncHandler(async (req, res) => {
-  const categories = await masterListRepository.getCategories();
+  const { project } = req.query;
+  const categories = await masterListRepository.getCategories(project);
   return successResponse(res, categories, 'Categories fetched successfully');
 });
 
 const getAssetTypes = asyncHandler(async (req, res) => {
-  const assets = await masterListRepository.getAssetTypes();
+  const assets = await masterListRepository.getAssetTypes(req.query);
   return successResponse(res, assets, 'Assets fetched successfully');
 });
 

@@ -15,9 +15,17 @@ const GenericRatingPage = ({ rowData = {}, config }) => {
   const [isEditMode, setIsEditMode] = useState(false);
   const [pageActiveImages, setPageActiveImages] = useState({});
   const [expandedCard, setExpandedCard] = useState(null);
+  const [remarkMasterConfig, setRemarkMasterConfig] = useState({});
 
   // Store data per page and per image
   const [globalReviewData, setGlobalReviewData] = useState({});
+
+  useEffect(() => {
+    fetch('/remarkMaster.json')
+      .then(res => res.json())
+      .then(data => setRemarkMasterConfig(data))
+      .catch(err => console.error('Failed to load remarkMaster.json', err));
+  }, []);
 
   const pagesData = config?.pagesData || [];
   const parameters = config?.parameters || [];
@@ -80,7 +88,9 @@ const GenericRatingPage = ({ rowData = {}, config }) => {
   const remarks = currentData.remarks;
   const headerRemarks = currentData.headerRemarks;
 
-  const remarkOptions = ['Due to crack', 'Due to rutting', 'Due to pothole', 'Rectified', 'Not Rectified'];
+  const currentCategory = currentPage.overrides?.category || rowData.category || 'N/A';
+  const categoryRemarks = remarkMasterConfig[currentCategory] || [];
+  const remarkOptions = [...categoryRemarks, 'Other'];
 
   const toggleEditMode = () => {
     setIsEditMode(!isEditMode);

@@ -14,7 +14,7 @@ async function migrate() {
         parameter: { $regex: /night visibility/i }
       },
       {
-        assetType: 'Signages',
+        assetType: { $regex: /signages/i },
         parameter: { $regex: /retro reflectivity/i }
       },
       {

@@ -199,7 +199,7 @@ class SurveyProcessingService {
                     if (!fs.existsSync(framePath)) return null;
                     const cloudRes = await cloudinary.uploader.upload(framePath, {
                       folder: `hirate/survey-images/${project}/${task.batchId}`,
-                      public_id: `chainage_${task.chainage.replace(/\./g, '_')}_${suffix}`,
+                      public_id: `chainage_${task.chainage.replace(/\./g, '_')}_${task.imageRequirement}_${suffix}`,
                       overwrite: true,
                       invalidate: true,
                       transformation: [{ quality: 'auto', fetch_format: 'auto' }]

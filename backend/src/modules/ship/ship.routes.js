@@ -18,4 +18,10 @@ router.get('/users', shipController.getUsers);
 router.get('/risk', shipController.getRisk);
 router.get('/trends', shipController.getTrends);
 
+// Phase 2 Relationship Intelligence Endpoints
+router.get('/relationship', shipController.getRelationshipIntelligence);
+router.get('/spatial', shipController.getSpatialIntelligence);
+router.get('/temporal', shipController.getTemporalIntelligence);
+router.get('/decision', shipController.getDecisionIntelligence);
+
 module.exports = router;
