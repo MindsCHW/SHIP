@@ -104,13 +104,14 @@ class InspectionEngineService {
       isSamplingHistoryReset: resetHistory
     };
 
-    // 7. Prepare Task Data
+    // 7. Prepare Task Data - Split by imageRequirement so survey processing can match surveyType
     const tasksData = [];
     sampledAssets.forEach(asset => {
-      // Split the asset's parameters by image requirement
-      const dayParams = asset.parameters.filter(p => (p.imageRequirement || 'DAY') === 'DAY');
+      // Split the asset's parameters by image requirement (from Master List)
+      const dayParams = asset.parameters.filter(p => (p.imageRequirement || 'DAY') !== 'NIGHT');
       const nightParams = asset.parameters.filter(p => p.imageRequirement === 'NIGHT');
 
+      // Create a DAY task if there are any DAY parameters
       if (dayParams.length > 0) {
         tasksData.push({
           project: asset.project,
@@ -124,6 +125,7 @@ class InspectionEngineService {
         });
       }
 
+      // Create a NIGHT task if there are any NIGHT parameters
       if (nightParams.length > 0) {
         tasksData.push({
           project: asset.project,

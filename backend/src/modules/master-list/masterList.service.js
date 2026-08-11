@@ -250,6 +250,50 @@ class MasterListService {
   }
 
   /**
+   * Retroactively fix imageRequirement for all existing Master List records
+   * by applying the same auto-tagging logic used during import.
+   * This corrects records imported before the NIGHT tagging was added.
+   */
+  async fixImageRequirements(project) {
+    const filter = project ? { project } : {};
+    const records = await MasterList.find(filter).select('_id assetType parameter').lean();
+
+    let updated = 0;
+    const nightConditions = (assetType, parameter) => {
+      const aLow = assetType.toLowerCase();
+      const pLow = parameter.toLowerCase();
+      if (aLow.includes('pavement markings') && pLow.includes('night visibility')) return true;
+      if (aLow.includes('signages') && pLow.includes('retro reflectivity')) return true;
+      if (aLow.includes('traffic blinkers and signals') && pLow.includes('functional condition')) return true;
+      if (aLow.includes('lightings') && pLow.includes('functional condition')) return true;
+      if (aLow.includes('delineators') && pLow.includes('functional condition')) return true;
+      return false;
+    };
+
+    const bulkOps = [];
+    for (const record of records) {
+      const isNight = nightConditions(record.assetType || '', record.parameter || '');
+      bulkOps.push({
+        updateOne: {
+          filter: { _id: record._id },
+          update: { $set: { imageRequirement: isNight ? 'NIGHT' : 'DAY' } }
+        }
+      });
+    }
+
+    if (bulkOps.length > 0) {
+      const result = await MasterList.bulkWrite(bulkOps);
+      updated = result.modifiedCount;
+    }
+
+    return {
+      total: records.length,
+      updated,
+      project: project || 'ALL'
+    };
+  }
+
+  /**
    * Delete entire project Master List
    */
   async deleteProjectMasterList(projectName) {

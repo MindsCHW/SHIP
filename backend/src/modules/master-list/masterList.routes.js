@@ -18,6 +18,7 @@ router.get('/road-types', masterListController.getRoadTypes);
 router.get('/parameters', masterListController.getParameters);
 router.get('/chainages', masterListController.getChainages);
 router.get('/stats', masterListController.getStats);
+router.post('/fix-image-requirements', masterListController.fixImageRequirements);
 
 router.put('/:id', masterListController.updateMasterListItem);
 router.delete('/project/:projectName', masterListController.deleteProjectMasterList);

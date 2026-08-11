@@ -79,6 +79,13 @@ const deleteProjectMasterList = asyncHandler(async (req, res) => {
   return successResponse(res, result, 'Project Master List deleted successfully');
 });
 
+const fixImageRequirements = asyncHandler(async (req, res) => {
+  const masterListService = require('./masterList.service');
+  const { project } = req.query; // optional: ?project=SPPL to fix just one project
+  const result = await masterListService.fixImageRequirements(project || null);
+  return successResponse(res, result, `Image requirements fixed: ${result.updated} records updated out of ${result.total} total.`);
+});
+
 module.exports = {
   getMasterList,
   getProjects,
@@ -91,5 +98,6 @@ module.exports = {
   importMasterList,
   updateMasterListItem,
   deleteMasterListItem,
-  deleteProjectMasterList
+  deleteProjectMasterList,
+  fixImageRequirements
 };

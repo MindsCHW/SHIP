@@ -90,7 +90,7 @@ class SpatialAnalyticsService {
           if (r.score !== undefined) {
             tSum += r.score;
             tCount++;
-            if (r.score <= 4) tCrit++;
+            if (r.score < 5) tCrit++;
           }
         });
       }
@@ -233,9 +233,15 @@ class SpatialAnalyticsService {
       const diff = parseFloat(carriageway.LHS.avgRating) - parseFloat(carriageway.RHS.avgRating);
       if (Math.abs(diff) >= 0.5) {
         insights.push({
-          type: diff > 0 ? 'warning' : 'warning',
+          type: 'warning',
           title: 'Carriageway Disparity Detected',
-          body: `${diff > 0 ? 'Right' : 'Left'} carriageway shows consistently lower ratings (${diff > 0 ? carriageway.RHS.avgRating : carriageway.LHS.avgRating} vs ${diff > 0 ? carriageway.LHS.avgRating : carriageway.RHS.avgRating}). Deploy targeted maintenance to this side.`
+          body: `${diff > 0 ? 'Right' : 'Left'} carriageway shows consistently lower structural performance across recorded inspections.`,
+          metrics: [
+            { label: 'LHS Rating', value: `${carriageway.LHS.avgRating}/10` },
+            { label: 'RHS Rating', value: `${carriageway.RHS.avgRating}/10` },
+            { label: 'Difference', value: Math.abs(diff).toFixed(1) }
+          ],
+          recommendation: `Deploy targeted maintenance and structural evaluation exclusively to the ${diff > 0 ? 'Right' : 'Left'} carriageway to resolve this disparity.`
         });
       }
     }
@@ -244,7 +250,13 @@ class SpatialAnalyticsService {
       insights.push({
         type: 'critical',
         title: 'Critical Failure Zone',
-        body: `Severe structural deterioration detected at ${criticalZones[0].chainage} with ${criticalZones[0].issueDensity} critical issues across ${criticalZones[0].dominantIssue}. Immediate inspection recommended.`
+        body: `Severe structural deterioration detected at ${criticalZones[0].chainage} indicating immediate operational risks.`,
+        metrics: [
+          { label: 'Zone', value: criticalZones[0].chainage },
+          { label: 'Critical Defects', value: criticalZones[0].issueDensity },
+          { label: 'Dominant Issue', value: criticalZones[0].dominantIssue }
+        ],
+        recommendation: 'Immediate inspection and potential emergency repair deployment is highly recommended for this segment.'
       });
     }
 
@@ -252,17 +264,46 @@ class SpatialAnalyticsService {
       insights.push({
         type: 'warning',
         title: 'Multi-Asset Cascading Failure',
-        body: `At chainage ${issueClusters[0].chainage}, ${issueClusters[0].categories.join(' and ')} are failing simultaneously. This indicates a cross-asset dependency failure.`
+        body: `At chainage ${issueClusters[0].chainage}, multiple asset categories are failing simultaneously, indicating cross-asset dependency breakdown.`,
+        metrics: [
+          { label: 'Location', value: `CH ${issueClusters[0].chainage}` },
+          { label: 'Failed Categories', value: issueClusters[0].categories.length },
+          { label: 'Critical Count', value: issueClusters[0].critical }
+        ],
+        recommendation: `Investigate shared structural foundations affecting ${issueClusters[0].categories.join(', ')}.`
       });
     }
 
     if (roadCorridor.length > 0) {
-      const best = [...roadCorridor].sort((a, b) => b.avgRating - a.avgRating)[0];
+      const sortedCorridors = [...roadCorridor].sort((a, b) => b.avgRating - a.avgRating);
+      const best = sortedCorridors[0];
+      const worst = sortedCorridors[sortedCorridors.length - 1];
+
       insights.push({
         type: 'good',
-        title: 'High Performing Corridor',
-        body: `Corridor CH ${best.range} is maintaining an excellent average rating of ${best.avgRating}/10. Maintenance practices here should be replicated.`
+        title: 'High Performing Corridor Excellence',
+        body: `Corridor CH ${best.range} is operating at peak structural integrity. The dominant ${best.dominantCategory} condition suggests superior local practices.`,
+        metrics: [
+          { label: 'Segment', value: `CH ${best.range}` },
+          { label: 'Rating', value: `${best.avgRating}/10` },
+          { label: 'Assets', value: best.observations }
+        ],
+        recommendation: 'We strongly recommend benchmarking and replicating these operational procedures across underperforming zones.'
       });
+
+      if (worst && worst.avgRating < 7 && worst.range !== best.range) {
+        insights.push({
+          type: 'critical',
+          title: 'Underperforming Corridor Alert',
+          body: `Corridor CH ${worst.range} is demonstrating severe operational degradation, primarily driven by failing ${worst.dominantCategory} assets.`,
+          metrics: [
+            { label: 'Segment', value: `CH ${worst.range}` },
+            { label: 'Rating', value: `${worst.avgRating}/10` },
+            { label: 'Critical', value: worst.critical }
+          ],
+          recommendation: 'Immediate capital intervention and root-cause structural analysis are required to prevent cascading systemic failures.'
+        });
+      }
     }
 
     return {

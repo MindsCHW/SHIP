@@ -21,11 +21,22 @@ const MapFitter = ({ data }) => {
 
 const AssetDistributionMap = ({ data }) => {
   const [selectedAsset, setSelectedAsset] = useState('All');
+  const [selectedRating, setSelectedRating] = useState('All');
 
   if (!data || data.length === 0) return <div className="h-[400px] flex items-center justify-center text-gray-400">No spatial asset data available.</div>;
 
   const categories = ['All', ...new Set(data.map(d => d.type))];
-  const filteredData = selectedAsset === 'All' ? data : data.filter(d => d.type === selectedAsset);
+  
+  const filteredData = data.filter(d => {
+    const matchCategory = selectedAsset === 'All' || d.type === selectedAsset;
+    
+    let matchRating = true;
+    if (selectedRating === 'Good') matchRating = d.rating >= 8;
+    else if (selectedRating === 'Fair') matchRating = d.rating >= 5 && d.rating < 8;
+    else if (selectedRating === 'Critical') matchRating = d.rating < 5;
+    
+    return matchCategory && matchRating;
+  });
 
   const getColor = (rating) => {
     if (rating >= 8) return '#10b981';
@@ -33,20 +44,41 @@ const AssetDistributionMap = ({ data }) => {
     return '#ef4444';
   };
 
+  const ratings = ['All', 'Good', 'Fair', 'Critical'];
+
   return (
     <div className="flex flex-col h-[600px]">
-      <div className="bg-gray-50 border-b border-gray-200 p-4 flex gap-2 overflow-x-auto">
-        {categories.map(cat => (
-          <button
-            key={cat}
-            onClick={() => setSelectedAsset(cat)}
-            className={`px-4 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-colors ${
-              selectedAsset === cat ? 'bg-green-600 text-white shadow' : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-100'
-            }`}
-          >
-            {cat}
-          </button>
-        ))}
+      <div className="bg-gray-50 border-b border-gray-200 flex flex-col p-4 gap-3">
+        {/* Category Filter */}
+        <div className="flex gap-2 overflow-x-auto pb-1 custom-scrollbar">
+          {categories.map(cat => (
+            <button
+              key={cat}
+              onClick={() => setSelectedAsset(cat)}
+              className={`px-4 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-colors ${
+                selectedAsset === cat ? 'bg-green-600 text-white shadow' : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-100'
+              }`}
+            >
+              {cat}
+            </button>
+          ))}
+        </div>
+        {/* Rating Filter */}
+        <div className="flex gap-2 overflow-x-auto pb-1 custom-scrollbar">
+          {ratings.map(rating => (
+            <button
+              key={rating}
+              onClick={() => setSelectedRating(rating)}
+              className={`px-4 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-colors ${
+                selectedRating === rating 
+                  ? (rating === 'Critical' ? 'bg-red-500 text-white shadow' : rating === 'Fair' ? 'bg-yellow-500 text-white shadow' : rating === 'Good' ? 'bg-green-500 text-white shadow' : 'bg-gray-800 text-white shadow')
+                  : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-100'
+              }`}
+            >
+              {rating}
+            </button>
+          ))}
+        </div>
       </div>
       <div className="flex-1 relative z-0">
         <MapContainer center={[20.5937, 78.9629]} zoom={5} style={{ height: '100%', width: '100%' }}>

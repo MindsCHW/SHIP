@@ -34,7 +34,7 @@ class SurveyProcessingService {
 
     const pendingBatches = await InspectionBatch.find({
       project,
-      status: { $in: ['WAITING_FOR_IMAGES', 'FAILED', 'READY_FOR_REVIEW', 'READY_FOR_RATING', 'IN_PROGRESS'] }
+      status: { $in: ['WAITING_FOR_IMAGES', 'FAILED', 'PROCESSING', 'READY_FOR_REVIEW', 'READY_FOR_RATING', 'IN_PROGRESS'] }
     });
 
     if (!pendingBatches.length) {

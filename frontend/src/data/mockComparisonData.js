@@ -35,38 +35,38 @@ export const mockComparisonData = {
   criticalIssues: [
     {
       chainage: '145.320', category: 'Roadway', asset: 'Pavement', parameter: 'Cracks',
-      prev: { rating: 5, remark: 'Patching Required', date: '04 Aug 2026', image: 'https://res.cloudinary.com/demo/image/upload/sample.jpg?q=6a62ea879f8b94109380a654&i=3' },
-      curr: { rating: 10, remark: 'Rectified', date: '05 Sep 2026', image: 'https://res.cloudinary.com/demo/image/upload/sample.jpg?q=6a62ea879f8b94109380a655&i=1' },
+      prev: { rating: 5, remark: 'Patching Required', date: '04 Aug 2026', image: 'https://images.unsplash.com/photo-1515162816999-a0c47dc192f7?auto=format&fit=crop&w=800&q=80' },
+      curr: { rating: 10, remark: 'Rectified', date: '05 Sep 2026', image: 'https://images.unsplash.com/photo-1449824913935-59a10b8d2000?auto=format&fit=crop&w=800&q=80' },
       status: 'Improved'
     },
     {
       chainage: '147.100', category: 'Road Signage & Furniture', asset: 'Signboard', parameter: 'Reflectivity',
-      prev: { rating: 10, remark: 'Good Condition', date: '04 Aug 2026', image: 'https://res.cloudinary.com/demo/image/upload/sample.jpg?q=6a62ea879f8b94109380a656&i=1' },
-      curr: { rating: 5, remark: 'Faded, needs replacement', date: '05 Sep 2026', image: 'https://res.cloudinary.com/demo/image/upload/sample.jpg?q=6a62ea879f8b94109380a644&i=1' },
+      prev: { rating: 10, remark: 'Good Condition', date: '04 Aug 2026', image: 'https://images.unsplash.com/photo-1563223062-8e104e7978b6?auto=format&fit=crop&w=800&q=80' },
+      curr: { rating: 5, remark: 'Faded, needs replacement', date: '05 Sep 2026', image: 'https://images.unsplash.com/photo-1534073133331-c4c6226683cb?auto=format&fit=crop&w=800&q=80' },
       status: 'Deteriorated'
     },
     {
       chainage: '148.500', category: 'Structures', asset: 'Bridge', parameter: 'Expansion Joint',
-      prev: { rating: 10, remark: 'Normal wear', date: '04 Aug 2026', image: 'https://res.cloudinary.com/demo/image/upload/sample.jpg?q=6a62ea879f8b94109380a643&i=1' },
-      curr: { rating: 1, remark: 'Severe gap, immediate repair', date: '05 Sep 2026', image: 'https://res.cloudinary.com/demo/image/upload/sample.jpg?q=6a62ea879f8b94109380a648&i=1' },
+      prev: { rating: 10, remark: 'Normal wear', date: '04 Aug 2026', image: 'https://images.unsplash.com/photo-1545558014-8692077e9b5c?auto=format&fit=crop&w=800&q=80' },
+      curr: { rating: 1, remark: 'Severe gap, immediate repair', date: '05 Sep 2026', image: 'https://images.unsplash.com/photo-1518241416805-4f7f2597ffc8?auto=format&fit=crop&w=800&q=80' },
       status: 'Deteriorated'
     },
     {
       chainage: '150.200', category: 'Roadway', asset: 'Shoulder', parameter: 'Erosion',
-      prev: { rating: 1, remark: 'Deep cut observed', date: '04 Aug 2026', image: 'https://res.cloudinary.com/demo/image/upload/sample.jpg?q=6a62ea879f8b94109380a649&i=3' },
-      curr: { rating: 10, remark: 'Filled and compacted', date: '05 Sep 2026', image: 'https://res.cloudinary.com/demo/image/upload/sample.jpg?q=6a62ea879f8b94109380a638&i=3' },
+      prev: { rating: 1, remark: 'Deep cut observed', date: '04 Aug 2026', image: 'https://images.unsplash.com/photo-1584449755490-50d4f3b432a2?auto=format&fit=crop&w=800&q=80' },
+      curr: { rating: 10, remark: 'Filled and compacted', date: '05 Sep 2026', image: 'https://images.unsplash.com/photo-1528652037986-0937a0eb52d2?auto=format&fit=crop&w=800&q=80' },
       status: 'Improved'
     },
     {
       chainage: '152.050', category: 'Landscaping', asset: 'Median Plantation', parameter: 'Survival Rate',
-      prev: { rating: 5, remark: 'Dry plants', date: '04 Aug 2026', image: 'https://res.cloudinary.com/demo/image/upload/sample.jpg?q=6a62ea879f8b94109380a63c&i=2' },
-      curr: { rating: 10, remark: 'Replanted and watered', date: '05 Sep 2026', image: 'https://res.cloudinary.com/demo/image/upload/sample.jpg?q=6a62ea879f8b94109380a63d&i=3' },
+      prev: { rating: 5, remark: 'Dry plants', date: '04 Aug 2026', image: 'https://images.unsplash.com/photo-1585244517228-4ce31da8dcba?auto=format&fit=crop&w=800&q=80' },
+      curr: { rating: 10, remark: 'Replanted and watered', date: '05 Sep 2026', image: 'https://images.unsplash.com/photo-1502877338535-766e1452684a?auto=format&fit=crop&w=800&q=80' },
       status: 'Improved'
     },
     {
       chainage: '155.800', category: 'Road Signage & Furniture', asset: 'Crash Barrier', parameter: 'Alignment',
-      prev: { rating: 1, remark: 'Damaged by accident', date: '04 Aug 2026', image: 'https://res.cloudinary.com/demo/image/upload/sample.jpg?q=6a62ea879f8b94109380a640&i=3' },
-      curr: { rating: 10, remark: 'Replaced with new barrier', date: '05 Sep 2026', image: 'https://res.cloudinary.com/demo/image/upload/sample.jpg?q=6a62ea879f8b94109380a643&i=2' },
+      prev: { rating: 1, remark: 'Damaged by accident', date: '04 Aug 2026', image: 'https://images.unsplash.com/photo-1568283893301-4be3a30b429d?auto=format&fit=crop&w=800&q=80' },
+      curr: { rating: 10, remark: 'Replaced with new barrier', date: '05 Sep 2026', image: 'https://images.unsplash.com/photo-1522204523234-8729aa6e3d5f?auto=format&fit=crop&w=800&q=80' },
       status: 'Improved'
     }
   ],
