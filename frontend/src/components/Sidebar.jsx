@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { cn } from '../utils/cn';
-import { MdStarRate, MdPerson, MdChevronLeft, MdChevronRight, MdClose, MdDashboard, MdContentCopy, MdCheck, MdNotifications, MdGroup, MdList, MdOutlinePrecisionManufacturing, MdOutlineVideoCameraFront, MdImageSearch, MdVideoLibrary, MdInsights } from 'react-icons/md';
+import { MdStarRate, MdPerson, MdChevronLeft, MdChevronRight, MdClose, MdDashboard, MdContentCopy, MdCheck, MdNotifications, MdGroup, MdList, MdOutlinePrecisionManufacturing, MdOutlineVideoCameraFront, MdImageSearch, MdVideoLibrary, MdInsights, MdAddRoad } from 'react-icons/md';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../hooks/useAuth';
+import { projectService } from '../services/project.service';
 
-const allProjects = [
+const fallbackProjects = [
   'ADTPL', 'APEL', 'BFHL', 'BWHPL', 'DATL', 'DHMEPL', 'FRHL', 'GAEPL',
   'JMTPL', 'JUHPL', 'KETPL', 'KHEPL', 'KMTPL', 'KTIPL', 'MBEL', 'MHPL',
   'MKTPL', 'MSHP', 'NAM', 'NDEPL', 'NKTPL', 'SIPL', 'SMTPL', 'SPPL',
@@ -18,10 +19,31 @@ const Sidebar = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const selectedProject = searchParams.get('project');
+  const [dynamicProjects, setDynamicProjects] = useState(fallbackProjects);
+
+  useEffect(() => {
+    const fetchProjects = async () => {
+      try {
+        if (user && (user.role === 'Admin' || user.role === 'Administrator')) {
+          const res = await projectService.getAllProjects();
+          const projects = res.data || res || [];
+          const projectNames = projects.map(p => typeof p === 'string' ? p : (p.code || p.name || 'UNKNOWN'))
+                                       .filter(p => p !== 'UNKNOWN');
+          
+          if (projectNames.length > 0) {
+            setDynamicProjects([...new Set(projectNames)].sort());
+          }
+        }
+      } catch (err) {
+        console.error('Failed to fetch projects for sidebar', err);
+      }
+    };
+    fetchProjects();
+  }, [user]);
 
   const projectOptions = useMemo(() => {
-    if (!user) return allProjects;
-    if (user.role === 'Admin' || user.role === 'Administrator') return allProjects;
+    if (!user) return dynamicProjects;
+    if (user.role === 'Admin' || user.role === 'Administrator') return dynamicProjects;
     if (user.roadAssignment) {
       return user.roadAssignment
         .split(',')
@@ -29,7 +51,7 @@ const Sidebar = () => {
         .filter(p => p);
     }
     return [];
-  }, [user]);
+  }, [user, dynamicProjects]);
 
   
   // Sidebar collapsed by default on desktop, but persist user preference
@@ -70,6 +92,7 @@ const Sidebar = () => {
     { name: 'Dashboard', icon: MdDashboard, path: '/dashboard', allowedRoles: ['Admin', 'Administrator', 'HO', 'SPV', 'User'] },
     { name: 'Master List', icon: MdList, path: '/master-list', allowedRoles: ['Admin', 'Administrator'] },
     { name: 'Inspection Engine', icon: MdOutlinePrecisionManufacturing, path: '/inspection-engine', allowedRoles: ['Admin', 'Administrator'] },
+    { name: 'Roadway Sampling', icon: MdAddRoad, path: '/roadway-sampling', allowedRoles: ['Admin', 'Administrator'] },
     { name: 'Survey Library', icon: MdVideoLibrary, path: '/survey-library', allowedRoles: ['Admin', 'Administrator'] },
     { name: 'Survey Processing', icon: MdOutlineVideoCameraFront, path: '/survey-processing', allowedRoles: ['Admin', 'Administrator'] },
     { name: 'Image Review', icon: MdImageSearch, path: '/image-review', allowedRoles: ['Admin', 'Administrator', 'HO'] },

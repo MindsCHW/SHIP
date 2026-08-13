@@ -19,5 +19,15 @@ export const inspectionEngineService = {
   async deleteBatch(batchId) {
     const response = await api.delete(`/inspection-engine/batches/${batchId}`);
     return response.data;
+  },
+
+  async previewRoadwayBatch(data) {
+    const response = await api.post('/inspection-engine/roadway-preview', data);
+    return response.data;
+  },
+
+  async createRoadwayBatch(data) {
+    const response = await api.post('/inspection-engine/roadway', data);
+    return response.data;
   }
 };

@@ -3,6 +3,9 @@
 const inspectionEngineRepository = require('../repositories/inspectionEngine.repository');
 const masterListRepository = require('../../master-list/masterList.repository');
 const SamplingStrategyFactory = require('./strategies/samplingStrategyFactory');
+const SurveyAsset = require('../../../models/SurveyAsset.model');
+const InspectionTask = require('../../../models/InspectionTask.model');
+const fs = require('fs');
 
 class InspectionEngineService {
   async createBatch(userId, batchData) {
@@ -142,6 +145,236 @@ class InspectionEngineService {
 
     // 7. Save to DB transactionally
     const batch = await inspectionEngineRepository.createBatch(newBatchData, tasksData);
+    
+    return batch;
+  }
+
+  _parseAllVttChainages(vttPath) {
+    try {
+      const content = fs.readFileSync(vttPath, 'utf8');
+      const blocks = content.trim().split(/\n\s*\n/);
+      const metadataPattern = /Lat:\s*([0-9.-]+),\s*Lon:\s*([0-9.-]+),\s*Speed:\s*([0-9.-]+)[kK]m\/hr\s*chainage:\s*([0-9.-]+)/i;
+      
+      const chainages = [];
+      for (const block of blocks) {
+        const mdMatch = block.match(metadataPattern);
+        if (mdMatch) {
+          chainages.push(parseFloat(mdMatch[4]));
+        }
+      }
+      return chainages.sort((a, b) => a - b);
+    } catch (e) {
+      throw new Error('Failed to parse VTT chainages');
+    }
+  }
+
+  _getClosestChainage(target, chainages) {
+    if (!chainages || chainages.length === 0) return null;
+    let closest = chainages[0];
+    let minDiff = Math.abs(target - closest);
+    for (let i = 1; i < chainages.length; i++) {
+      const diff = Math.abs(target - chainages[i]);
+      if (diff < minDiff) {
+        closest = chainages[i];
+        minDiff = diff;
+      }
+    }
+    return closest;
+  }
+
+  async _calculateRoadwaySampling(project, surveyAssetId, startChainage, endChainage, intervalMetres) {
+    let assets = [];
+    if (surveyAssetId === 'all') {
+      assets = await SurveyAsset.find({ project, 'vtt.path': { $exists: true, $ne: null } });
+    } else {
+      const asset = await SurveyAsset.findOne({ _id: surveyAssetId, project });
+      if (asset) assets.push(asset);
+    }
+    
+    if (assets.length === 0) throw new Error('No valid survey assets found');
+
+    const availableChainages = [];
+    const chainageSourceMap = new Map();
+
+    for (const asset of assets) {
+      try {
+        const assetChainages = this._parseAllVttChainages(asset.vtt.path);
+        for (const c of assetChainages) {
+          availableChainages.push(c);
+          if (!chainageSourceMap.has(c)) {
+            chainageSourceMap.set(c, asset);
+          }
+        }
+      } catch (err) {
+        console.warn(`Failed to parse VTT for asset ${asset._id}: ${err.message}`);
+      }
+    }
+    
+    if (availableChainages.length === 0) throw new Error('No chainages found in VTT(s)');
+
+    availableChainages.sort((a, b) => a - b);
+
+    // Interval is in metres (e.g., 10). Chainage is usually in km (e.g., 180.00).
+    const interval = intervalMetres / 1000;
+    const minC = Math.min(startChainage, endChainage);
+    const maxC = Math.max(startChainage, endChainage);
+
+    const targetChainages = [];
+    for (let c = minC; c <= maxC; c += interval) {
+      targetChainages.push(parseFloat(c.toFixed(3)));
+    }
+
+    const matchedChainages = new Set();
+    const sourceSurveyIds = new Map(); // matched chainage (number) -> surveyAssetId
+
+    for (const target of targetChainages) {
+      const closest = this._getClosestChainage(target, availableChainages);
+      if (closest !== null) {
+        matchedChainages.add(closest);
+        const sourceAsset = chainageSourceMap.get(closest);
+        if (sourceAsset) {
+          sourceSurveyIds.set(closest, sourceAsset._id.toString());
+        }
+      }
+    }
+
+    const uniqueMatched = Array.from(matchedChainages);
+
+    // Check which ones already have images extracted in previous InspectionTasks
+    const existingTasks = await InspectionTask.find({
+      project,
+      chainage: { $in: uniqueMatched.map(c => c.toFixed(3)) },
+      'image.cloudinaryUrl': { $exists: true, $ne: null }
+    }).select('chainage image.cloudinaryUrl extractionDiagnostics');
+
+    const existingImageMap = {};
+    for (const task of existingTasks) {
+      if (surveyAssetId === 'all') {
+        if (!existingImageMap[task.chainage]) {
+          existingImageMap[task.chainage] = task.image.cloudinaryUrl;
+        }
+      } else {
+        if (!existingImageMap[task.chainage] || (task.extractionDiagnostics && task.extractionDiagnostics.surveyAssetId?.toString() === surveyAssetId)) {
+          existingImageMap[task.chainage] = task.image.cloudinaryUrl;
+        }
+      }
+    }
+
+    const matchedCount = uniqueMatched.length;
+    const existingCount = Object.keys(existingImageMap).length;
+    const missingCount = matchedCount - existingCount;
+
+    return {
+      surveyAssetId,
+      surveyName: surveyAssetId === 'all' ? 'All Videos' : assets[0].assetName,
+      surveyType: surveyAssetId === 'all' ? 'MIXED' : assets[0].surveyType,
+      startChainage: minC,
+      endChainage: maxC,
+      intervalMetres,
+      totalAvailableImages: availableChainages.length,
+      matchedImages: matchedCount,
+      existingImages: existingCount,
+      missingExtractionImages: missingCount,
+      uniqueMatchedChainages: uniqueMatched,
+      existingImageMap,
+      sourceSurveyIds
+    };
+  }
+
+  async previewRoadwayBatch(userId, data) {
+    const { project, surveyAssetId, startChainage, endChainage, intervalMetres } = data;
+    if (!project || !surveyAssetId || startChainage == null || endChainage == null || !intervalMetres) {
+      throw new Error('Missing required fields for Roadway preview');
+    }
+    
+    const samplingData = await this._calculateRoadwaySampling(project, surveyAssetId, startChainage, endChainage, intervalMetres);
+    
+    // Calculate total question instances
+    // For Roadway, we fetch Kerb, Shoulder, and Pavement MasterList parameters
+    const masterList = await masterListRepository.getMasterList({ 
+      project, 
+      status: 'Active',
+      assetType: { $in: ['Kerb', 'Shoulder', 'Pavement'] }
+    });
+
+    return {
+      ...samplingData,
+      questionsPerImage: masterList.length,
+      totalQuestionInstances: samplingData.matchedImages * masterList.length
+    };
+  }
+
+  async createRoadwayBatch(userId, data) {
+    const { project, surveyAssetId, startChainage, endChainage, intervalMetres } = data;
+    
+    const samplingData = await this._calculateRoadwaySampling(project, surveyAssetId, startChainage, endChainage, intervalMetres);
+    
+    const masterListPopulation = await masterListRepository.getMasterList({ 
+      project, 
+      status: 'Active',
+      assetType: { $in: ['Kerb', 'Shoulder', 'Pavement'] }
+    });
+
+    if (masterListPopulation.length === 0) {
+      throw new Error('No active Master List questions found for Kerb, Shoulder, or Pavement in this project.');
+    }
+
+    const name = `Roadway-${project}-${new Date().toISOString().slice(0, 10)}-${Math.floor(Math.random() * 1000)}`;
+    
+    // In continuous sampling, we don't randomly sample. We inspect ALL matched chainages.
+    const selectedQuestionsCount = samplingData.matchedImages * masterListPopulation.length;
+
+    const newBatchData = {
+      name,
+      project,
+      categories: [],
+      assetTypes: ['Roadway', 'Kerb', 'Shoulder', 'Pavement'],
+      samplingPercentage: 100, // It's 100% of the selected interval
+      samplingStrategy: 'CONTINUOUS',
+      totalMasterQuestions: masterListPopulation.length,
+      selectedQuestionsCount,
+      uniqueChainagesCount: samplingData.matchedImages,
+      status: 'WAITING_FOR_IMAGES',
+      createdBy: userId,
+      isSamplingHistoryReset: false
+    };
+
+    const tasksData = [];
+    
+    for (const chainage of samplingData.uniqueMatchedChainages) {
+      const chainageStr = chainage.toFixed(3);
+      const existingImageUrl = samplingData.existingImageMap[chainageStr];
+      
+      const taskStatus = existingImageUrl ? 'READY_FOR_REVIEW' : 'PENDING_IMAGE';
+      
+      const task = {
+        project,
+        chainage: chainageStr,
+        assetType: 'Roadway',
+        assetSubType: '',
+        roadType: 'Main Carriageway', // Usually continuous is MCW, but we leave it as default or fetch from survey
+        imageRequirement: samplingData.surveyType || 'DAY',
+        parameters: masterListPopulation.map(p => p._id),
+        status: taskStatus,
+        extractionDiagnostics: {
+          surveyAssetId: samplingData.surveyAssetId === 'all' ? samplingData.sourceSurveyIds.get(chainage) : surveyAssetId
+        }
+      };
+
+      if (existingImageUrl) {
+        task.image = { cloudinaryUrl: existingImageUrl };
+      }
+
+      tasksData.push(task);
+    }
+
+    const batch = await inspectionEngineRepository.createBatch(newBatchData, tasksData);
+    
+    // Update batch status if all tasks already have images
+    if (samplingData.missingExtractionImages === 0) {
+      batch.status = 'READY_FOR_REVIEW';
+      await batch.save();
+    }
     
     return batch;
   }

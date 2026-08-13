@@ -257,6 +257,131 @@ const InspectorApp = () => {
     images.push(prevImg, currentImg, nextImg);
   }
 
+  const renderParamCard = (param) => {
+    const rating = getRating(param._id);
+    return (
+      <div
+        key={param._id}
+        className="flex flex-col border border-borderColor p-4 rounded bg-gray-50/30 shadow-sm flex-1 min-w-[300px]"
+      >
+        <div className="flex items-center justify-between mb-3 border-b border-gray-100 pb-2">
+          <h3 className="font-medium text-lg text-gray-800">{param.parameter}</h3>
+          <div className="flex items-center gap-4">
+            <label className="flex items-center gap-1.5 cursor-pointer group">
+              <input
+                type="radio"
+                name={`rectified-${param._id}`}
+                value="Rectified"
+                checked={rating.remark === 'Rectified'}
+                onChange={() => {
+                  setRating(param._id, 'remark', 'Rectified');
+                  setRating(param._id, 'score', '10');
+                }}
+                className="w-4 h-4 text-blue-600 focus:ring-blue-500"
+              />
+              <span className="text-sm font-medium text-gray-700">Rectified</span>
+            </label>
+            <label className="flex items-center gap-1.5 cursor-pointer group">
+              <input
+                type="radio"
+                name={`rectified-${param._id}`}
+                value="Not Rectified"
+                checked={rating.remark === 'Not Rectified'}
+                onChange={() => {
+                  setRating(param._id, 'remark', 'Not Rectified');
+                  setRating(param._id, 'score', '5');
+                }}
+                className="w-4 h-4 text-blue-600 focus:ring-blue-500"
+              />
+              <span className="text-sm font-medium text-gray-700">Not Rectified</span>
+            </label>
+            <button
+              onClick={() => handleUndo(param._id)}
+              className="text-gray-400 hover:text-red-500 transition-colors p-1 ml-1 border-l border-gray-200 pl-3"
+              title="Undo changes"
+            >
+              <MdUndo className="text-lg" />
+            </button>
+          </div>
+        </div>
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 mt-auto">
+          <div className="flex gap-4 shrink-0">
+            {['0', '1', '5', '10'].map(val => {
+              const isRed = val === '0' || val === '1';
+              const colorClass = isRed
+                ? 'text-red-500 focus:ring-red-500 accent-red-500'
+                : 'text-[#5cb85c] focus:ring-[#5cb85c] accent-[#5cb85c]';
+              return (
+                <label key={val} className="flex items-center gap-1.5 sm:gap-2 cursor-pointer group">
+                  <input
+                    type="radio"
+                    name={`rating-${param._id}`}
+                    value={val}
+                    checked={rating.score === val}
+                    onChange={(e) => setRating(param._id, 'score', e.target.value)}
+                    onKeyDown={(e) => e.preventDefault()}
+                    onClick={(e) => e.target.blur()}
+                    className={`w-4 h-4 border-gray-300 ${colorClass}`}
+                  />
+                  <span className="text-sm font-medium text-gray-700 group-hover:text-gray-900">{val}</span>
+                </label>
+              );
+            })}
+          </div>
+          <div className="flex-1 w-full">
+            {customRemarkMode[param._id] || (rating.remark && !dynamicRemarkOptions.includes(rating.remark) && rating.remark !== 'Other') ? (
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  autoFocus
+                  value={rating.remark === 'Other' ? '' : rating.remark}
+                  onChange={(e) => setRating(param._id, 'remark', e.target.value)}
+                  placeholder="Enter custom remark..."
+                  className="w-full px-3 py-1.5 md:min-h-[38px] bg-white border border-[#5cb85c] rounded-md text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#5cb85c]/20 shadow-sm"
+                />
+                <button
+                  onClick={() => {
+                    setRating(param._id, 'remark', '');
+                    setCustomRemarkMode(prev => ({ ...prev, [param._id]: false }));
+                  }}
+                  className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors"
+                  title="Cancel custom remark"
+                >
+                  <MdClose className="text-xl" />
+                </button>
+              </div>
+            ) : (
+              <CustomDropdown
+                options={dynamicRemarkOptions}
+                value={rating.remark}
+                onChange={(val) => {
+                  if (val === 'Other') {
+                    setCustomRemarkMode(prev => ({ ...prev, [param._id]: true }));
+                    setRating(param._id, 'remark', '');
+                  } else {
+                    setRating(param._id, 'remark', val);
+                    if (val && val.toLowerCase() === 'rectified') {
+                      setRating(param._id, 'score', '10');
+                    } else if (val && val.toLowerCase() === 'not rectified') {
+                      setRating(param._id, 'score', '5');
+                    } else {
+                      const resolvedScore = resolveRemarkRating('', val);
+                      if (resolvedScore !== null) {
+                        setRating(param._id, 'score', resolvedScore);
+                      }
+                    }
+                  }
+                }}
+                placeholder="Remark"
+                direction="up"
+              />
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   if (loading) {
     return (
       <div className="flex flex-col h-screen items-center justify-center bg-[#F8FAFC] gap-4">
@@ -412,131 +537,25 @@ const InspectorApp = () => {
             Rating Parameters
           </h2>
 
-          <div className="flex flex-col xl:flex-row gap-6 w-full mb-0">
-            {(currentTask.parameters || []).map(param => {
-              const rating = getRating(param._id);
-              return (
-                <div
-                  key={param._id}
-                  className="flex flex-col border border-borderColor p-4 rounded bg-gray-50/30 shadow-sm flex-1"
-                >
-                  <div className="flex items-center justify-between mb-3 border-b border-gray-100 pb-2">
-                    <h3 className="font-medium text-lg text-gray-800">{param.parameter}</h3>
-                    <div className="flex items-center gap-4">
-                      <label className="flex items-center gap-1.5 cursor-pointer group">
-                        <input
-                          type="radio"
-                          name={`rectified-${param._id}`}
-                          value="Rectified"
-                          checked={rating.remark === 'Rectified'}
-                          onChange={() => {
-                            setRating(param._id, 'remark', 'Rectified');
-                            setRating(param._id, 'score', '10');
-                          }}
-                          className="w-4 h-4 text-blue-600 focus:ring-blue-500"
-                        />
-                        <span className="text-sm font-medium text-gray-700">Rectified</span>
-                      </label>
-                      <label className="flex items-center gap-1.5 cursor-pointer group">
-                        <input
-                          type="radio"
-                          name={`rectified-${param._id}`}
-                          value="Not Rectified"
-                          checked={rating.remark === 'Not Rectified'}
-                          onChange={() => {
-                            setRating(param._id, 'remark', 'Not Rectified');
-                            setRating(param._id, 'score', '5');
-                          }}
-                          className="w-4 h-4 text-blue-600 focus:ring-blue-500"
-                        />
-                        <span className="text-sm font-medium text-gray-700">Not Rectified</span>
-                      </label>
-                      <button
-                        onClick={() => handleUndo(param._id)}
-                        className="text-gray-400 hover:text-red-500 transition-colors p-1 ml-1 border-l border-gray-200 pl-3"
-                        title="Undo changes"
-                      >
-                        <MdUndo className="text-lg" />
-                      </button>
+          <div className="flex flex-col gap-6 w-full mb-0">
+            {currentTask.assetType === 'Roadway' ? (
+              ['Kerb', 'Shoulder', 'Pavement'].map(group => {
+                const groupParams = (currentTask.parameters || []).filter(p => p.assetType === group);
+                if (groupParams.length === 0) return null;
+                return (
+                  <div key={group} className="flex flex-col w-full">
+                    <h3 className="text-md font-bold text-gray-700 mb-3 pb-1 border-b-2 border-gray-200">{group}</h3>
+                    <div className="flex flex-col xl:flex-row gap-6 w-full flex-wrap">
+                       {groupParams.map(param => renderParamCard(param))}
                     </div>
                   </div>
-                  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 mt-auto">
-                    <div className="flex gap-4 shrink-0">
-                      {['0', '1', '5', '10'].map(val => {
-                        const isRed = val === '0' || val === '1';
-                        const colorClass = isRed
-                          ? 'text-red-500 focus:ring-red-500 accent-red-500'
-                          : 'text-[#5cb85c] focus:ring-[#5cb85c] accent-[#5cb85c]';
-                        return (
-                          <label key={val} className="flex items-center gap-1.5 sm:gap-2 cursor-pointer group">
-                            <input
-                              type="radio"
-                              name={`rating-${param._id}`}
-                              value={val}
-                              checked={rating.score === val}
-                              onChange={(e) => setRating(param._id, 'score', e.target.value)}
-                              onKeyDown={(e) => e.preventDefault()}
-                              onClick={(e) => e.target.blur()}
-                              className={`w-4 h-4 border-gray-300 ${colorClass}`}
-                            />
-                            <span className="text-sm font-medium text-gray-700 group-hover:text-gray-900">{val}</span>
-                          </label>
-                        );
-                      })}
-                    </div>
-                    <div className="flex-1 w-full">
-                      {customRemarkMode[param._id] || (rating.remark && !dynamicRemarkOptions.includes(rating.remark) && rating.remark !== 'Other') ? (
-                        <div className="flex items-center gap-2">
-                          <input
-                            type="text"
-                            autoFocus
-                            value={rating.remark === 'Other' ? '' : rating.remark}
-                            onChange={(e) => setRating(param._id, 'remark', e.target.value)}
-                            placeholder="Enter custom remark..."
-                            className="w-full px-3 py-1.5 md:min-h-[38px] bg-white border border-[#5cb85c] rounded-md text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#5cb85c]/20 shadow-sm"
-                          />
-                          <button
-                            onClick={() => {
-                              setRating(param._id, 'remark', '');
-                              setCustomRemarkMode(prev => ({ ...prev, [param._id]: false }));
-                            }}
-                            className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors"
-                            title="Cancel custom remark"
-                          >
-                            <MdClose className="text-xl" />
-                          </button>
-                        </div>
-                      ) : (
-                        <CustomDropdown
-                          options={dynamicRemarkOptions}
-                          value={rating.remark}
-                          onChange={(val) => {
-                            if (val === 'Other') {
-                              setCustomRemarkMode(prev => ({ ...prev, [param._id]: true }));
-                              setRating(param._id, 'remark', '');
-                            } else {
-                              setRating(param._id, 'remark', val);
-                              if (val && val.toLowerCase() === 'rectified') {
-                                setRating(param._id, 'score', '10');
-                              } else if (val && val.toLowerCase() === 'not rectified') {
-                                setRating(param._id, 'score', '5');
-                              } else {
-                                const resolvedScore = resolveRemarkRating('', val);
-                                if (resolvedScore !== null) {
-                                  setRating(param._id, 'score', resolvedScore);
-                                }
-                              }
-                            }
-                          }}
-                          placeholder="Remark"
-                          direction="up"
-                        />
-                      )}
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
+                );
+              })
+            ) : (
+              <div className="flex flex-col xl:flex-row gap-6 w-full flex-wrap">
+                {(currentTask.parameters || []).map(param => renderParamCard(param))}
+              </div>
+            )}
 
             {(!currentTask.parameters || currentTask.parameters.length === 0) && (
               <div className="flex-1 flex items-center justify-center py-12 text-gray-400 border border-dashed border-gray-300 rounded-lg">

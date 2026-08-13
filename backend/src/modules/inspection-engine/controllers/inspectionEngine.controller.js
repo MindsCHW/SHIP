@@ -20,6 +20,16 @@ const createBatch = asyncHandler(async (req, res, next) => {
   }
 });
 
+const previewRoadwayBatch = asyncHandler(async (req, res) => {
+  const preview = await inspectionEngineService.previewRoadwayBatch(req.user._id, req.body);
+  return successResponse(res, preview, 'Roadway batch preview generated successfully');
+});
+
+const createRoadwayBatch = asyncHandler(async (req, res) => {
+  const batch = await inspectionEngineService.createRoadwayBatch(req.user._id, req.body);
+  return successResponse(res, batch, 'Roadway batch created successfully', 201);
+});
+
 const listBatches = asyncHandler(async (req, res) => {
   const batches = await inspectionEngineService.listBatches(req.query);
   return successResponse(res, batches, 'Inspection batches retrieved successfully');
@@ -47,6 +57,8 @@ const getExtractionReport = asyncHandler(async (req, res) => {
 
 module.exports = {
   createBatch,
+  previewRoadwayBatch,
+  createRoadwayBatch,
   listBatches,
   getBatchDetails,
   deleteBatch,

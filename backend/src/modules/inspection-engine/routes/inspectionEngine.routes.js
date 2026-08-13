@@ -10,6 +10,12 @@ router.use(authenticate);
 // Create a new Inspection Batch
 router.post('/batches', inspectionEngineController.createBatch);
 
+// Preview a Roadway Continuous Sampling Batch
+router.post('/roadway-preview', inspectionEngineController.previewRoadwayBatch);
+
+// Create a Roadway Continuous Sampling Batch
+router.post('/roadway', inspectionEngineController.createRoadwayBatch);
+
 // List all Inspection Batches
 router.get('/batches', inspectionEngineController.listBatches);
 
