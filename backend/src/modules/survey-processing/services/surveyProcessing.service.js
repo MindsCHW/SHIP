@@ -260,6 +260,14 @@ class SurveyProcessingService {
           logger.error(`Python extraction failed for asset ${asset.assetName}:`, innerErr);
           asset.status = 'READY'; // revert
           await asset.save();
+          
+          // Update all tasks mapped to this asset with the actual error
+          for (const task of groupTasks) {
+            task.extractionDiagnostics = { failureReason: innerErr.message || 'Python processing failed' };
+            task.status = 'EXTRACTION_FAILED';
+            await task.save();
+            failCount++;
+          }
         }
       }
 

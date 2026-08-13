@@ -6,6 +6,9 @@ import { projectService } from '../../../services/project.service';
 const MasterListImportModal = ({ onClose, onSuccess }) => {
   const [file, setFile] = useState(null);
   const [project, setProject] = useState('');
+  const [isNewProject, setIsNewProject] = useState(false);
+  const [newProjectCode, setNewProjectCode] = useState('');
+  const [newProjectName, setNewProjectName] = useState('');
   const [projectsList, setProjectsList] = useState([]);
   const [importMode, setImportMode] = useState('append');
   const [loading, setLoading] = useState(false);
@@ -29,20 +32,42 @@ const MasterListImportModal = ({ onClose, onSuccess }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!file || !project) {
-      setError('Project Name and File are required.');
+    
+    let targetProject = project;
+
+    if (isNewProject) {
+      if (!newProjectCode || !newProjectName) {
+        setError('Both Project Code and Project Name are required for a new project.');
+        return;
+      }
+      targetProject = newProjectCode.toUpperCase();
+    }
+
+    if (!file || !targetProject) {
+      setError('Project and File are required.');
       return;
     }
 
     setLoading(true);
     setError(null);
 
-    const formData = new FormData();
-    formData.append('file', file);
-    formData.append('project', project.toUpperCase());
-    formData.append('importMode', importMode);
-
     try {
+      // Auto-create new project if needed
+      if (isNewProject) {
+        const exists = projectsList.find(p => p.code === targetProject);
+        if (!exists) {
+          await projectService.createProject({
+            code: targetProject,
+            fullName: newProjectName
+          });
+        }
+      }
+
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('project', targetProject);
+      formData.append('importMode', importMode);
+
       const res = await masterListService.importMasterList(formData);
       if (res.success) {
         setResult(res.data);
@@ -124,20 +149,54 @@ const MasterListImportModal = ({ onClose, onSuccess }) => {
 
               {/* Project Input */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Project</label>
-                <select
-                  required
-                  value={project}
-                  onChange={(e) => setProject(e.target.value)}
-                  className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 uppercase"
-                >
-                  <option value="" disabled>Select a project</option>
-                  {projectsList.map(p => (
-                    <option key={p._id || p.code} value={p.code}>
-                      {p.code} - {p.fullName}
-                    </option>
-                  ))}
-                </select>
+                <div className="flex justify-between items-center mb-1">
+                  <label className="block text-sm font-medium text-gray-700">Project</label>
+                  <button 
+                    type="button"
+                    onClick={() => {
+                      setIsNewProject(!isNewProject);
+                      setError(null);
+                    }}
+                    className="text-xs font-medium text-blue-600 hover:text-blue-700 hover:underline focus:outline-none"
+                  >
+                    {isNewProject ? 'Select Existing Project' : '+ Add New Project'}
+                  </button>
+                </div>
+                
+                {isNewProject ? (
+                  <div className="flex flex-col gap-3">
+                    <input
+                      type="text"
+                      required
+                      placeholder="Project Code (e.g., APEL)"
+                      value={newProjectCode}
+                      onChange={(e) => setNewProjectCode(e.target.value.toUpperCase())}
+                      className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 uppercase"
+                    />
+                    <input
+                      type="text"
+                      required
+                      placeholder="Project Full Name (e.g., Ahmedabad Project)"
+                      value={newProjectName}
+                      onChange={(e) => setNewProjectName(e.target.value)}
+                      className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                    />
+                  </div>
+                ) : (
+                  <select
+                    required
+                    value={project}
+                    onChange={(e) => setProject(e.target.value)}
+                    className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 uppercase"
+                  >
+                    <option value="" disabled>Select a project</option>
+                    {projectsList.map(p => (
+                      <option key={p._id || p.code} value={p.code}>
+                        {p.code} - {p.fullName}
+                      </option>
+                    ))}
+                  </select>
+                )}
               </div>
 
               {/* Import Mode */}
@@ -200,7 +259,7 @@ const MasterListImportModal = ({ onClose, onSuccess }) => {
                 </button>
                 <button
                   type="submit"
-                  disabled={loading || !file || !project}
+                  disabled={loading || !file || (isNewProject ? (!newProjectCode || !newProjectName) : !project)}
                   className="px-6 py-2.5 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg disabled:opacity-50 transition-colors flex items-center gap-2"
                 >
                   {loading && <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>}

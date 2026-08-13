@@ -5,6 +5,7 @@ import { MdClose, MdCheckCircle, MdCancel, MdRefresh, MdImage } from 'react-icon
 const ImageReviewDetailModal = ({ batch, onClose }) => {
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [isBulkApproving, setIsBulkApproving] = useState(false);
 
   useEffect(() => {
     fetchTasks();
@@ -43,6 +44,34 @@ const ImageReviewDetailModal = ({ batch, onClose }) => {
     alert('Reprocess triggered for task: ' + taskId);
   };
 
+  const pendingTasks = tasks.filter(t => !t.imageApproved && t.status !== 'EXTRACTION_FAILED' && t.status !== 'FAILED');
+
+  const handleBulkApprove = async () => {
+    if (pendingTasks.length === 0) return;
+    
+    const confirmApprove = window.confirm(`Are you sure you want to approve ${pendingTasks.length} pending images?`);
+    if (!confirmApprove) return;
+
+    try {
+      setIsBulkApproving(true);
+      await Promise.all(
+        pendingTasks.map(t => api.put(`/image-review/tasks/${t._id}`, { status: 'READY_FOR_RATING' }))
+      );
+
+      setTasks(prevTasks => prevTasks.map(t => {
+        if (!t.imageApproved && t.status !== 'EXTRACTION_FAILED' && t.status !== 'FAILED') {
+          return { ...t, status: 'READY_FOR_RATING', imageApproved: true };
+        }
+        return t;
+      }));
+    } catch (err) {
+      console.error(err);
+      alert('Failed to bulk approve some images. Please refresh and try again.');
+    } finally {
+      setIsBulkApproving(false);
+    }
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/50 backdrop-blur-sm">
       <div className="bg-white rounded-xl shadow-2xl w-full max-w-7xl max-h-[90vh] flex flex-col overflow-hidden">
@@ -72,12 +101,23 @@ const ImageReviewDetailModal = ({ batch, onClose }) => {
               )}
             </p>
           </div>
-          <button 
-            onClick={onClose}
-            className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors"
-          >
-            <MdClose className="text-2xl" />
-          </button>
+          <div className="flex items-center gap-4">
+            {pendingTasks.length > 0 && ['READY_FOR_REVIEW', 'READY_FOR_RATING', 'IN_PROGRESS'].includes(batch.status) && (
+              <button
+                onClick={handleBulkApprove}
+                disabled={isBulkApproving}
+                className="px-4 py-2 bg-blue-600 text-white font-medium text-sm rounded-lg shadow hover:bg-blue-700 transition-colors disabled:opacity-50 flex items-center gap-2"
+              >
+                {isBulkApproving ? 'Approving...' : `Bulk Approve Pending (${pendingTasks.length})`}
+              </button>
+            )}
+            <button 
+              onClick={onClose}
+              className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors"
+            >
+              <MdClose className="text-2xl" />
+            </button>
+          </div>
         </div>
 
         {/* Content */}
@@ -158,7 +198,7 @@ const ImageReviewDetailModal = ({ batch, onClose }) => {
                     </div>
                     
                     {/* Actions */}
-                    {batch.status === 'READY_FOR_REVIEW' && (
+                    {['READY_FOR_REVIEW', 'READY_FOR_RATING', 'IN_PROGRESS'].includes(batch.status) && (
                       <div className="mt-auto grid grid-cols-3 gap-2 pt-3 border-t border-gray-100">
                         <button 
                           onClick={() => handleUpdateStatus(task._id, 'READY_FOR_RATING')}

@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import ImageCarousel from '../components/Rating/ImageCarousel';
 import CustomDropdown from '../components/common/CustomDropdown';
 import { ratingService } from '../services/rating.service';
+import { resolveRemarkRating } from '../utils/remarkRatingResolver';
 import leftArrowImg from '../assets/leftarrow.PNG';
 import rightArrowImg from '../assets/rightarrow.PNG';
 
@@ -519,6 +520,11 @@ const InspectorApp = () => {
                                 setRating(param._id, 'score', '10');
                               } else if (val && val.toLowerCase() === 'not rectified') {
                                 setRating(param._id, 'score', '5');
+                              } else {
+                                const resolvedScore = resolveRemarkRating('', val);
+                                if (resolvedScore !== null) {
+                                  setRating(param._id, 'score', resolvedScore);
+                                }
                               }
                             }
                           }}

@@ -4,6 +4,7 @@ import Navbar from './../Navbar';
 import Sidebar from './../Sidebar';
 import ImageCarousel from './ImageCarousel';
 import CustomDropdown from './../common/CustomDropdown';
+import { resolveRemarkRating } from '../../utils/remarkRatingResolver';
 import { MdUndo, MdEdit } from 'react-icons/md';
 import { motion, AnimatePresence } from 'framer-motion';
 import leftArrowImg from '../../assets/leftarrow.PNG';
@@ -305,12 +306,27 @@ const GenericRatingPage = ({ rowData = {}, config }) => {
                           options={remarkOptions}
                           value={remarks[key]}
                           onChange={(val) => {
-                            setRemarks(prev => ({ ...prev, [key]: val }));
-                            if (val && val.toLowerCase() === 'rectified') {
-                              setRatings(prev => ({ ...prev, [key]: '10' }));
-                            } else if (val && val.toLowerCase() === 'not rectified') {
-                              setRatings(prev => ({ ...prev, [key]: '5' }));
-                            }
+                            setGlobalReviewData(prevGlobal => {
+                              const current = prevGlobal[currentPageIndex] || getInitialState();
+                              const newRemarks = { ...current.remarks, [key]: val };
+                              const newRatings = { ...current.ratings };
+                              
+                              if (val && val.toLowerCase() === 'rectified') {
+                                newRatings[key] = '10';
+                              } else if (val && val.toLowerCase() === 'not rectified') {
+                                newRatings[key] = '5';
+                              } else {
+                                const resolvedRating = resolveRemarkRating(currentCategory, val);
+                                if (resolvedRating !== null) {
+                                  newRatings[key] = resolvedRating;
+                                }
+                              }
+                              
+                              return {
+                                ...prevGlobal,
+                                [currentPageIndex]: { ...current, remarks: newRemarks, ratings: newRatings }
+                              };
+                            });
                           }}
                           placeholder="Remark"
                           direction="up"
