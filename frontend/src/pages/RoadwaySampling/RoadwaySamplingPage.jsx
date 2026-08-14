@@ -272,7 +272,7 @@ export default function RoadwaySamplingPage() {
               <h3>Validation Preview</h3>
             </div>
 
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
               <div className="bg-gray-50 p-4 rounded-xl border border-gray-100">
                 <div className="text-xs text-gray-500 font-medium uppercase tracking-wider mb-1">Target Chainages</div>
                 <div className="text-2xl font-bold text-gray-800">{preview.matchedImages}</div>
@@ -290,7 +290,12 @@ export default function RoadwaySamplingPage() {
 
               <div className="bg-blue-50 p-4 rounded-xl border border-blue-100">
                 <div className="text-xs text-blue-700 font-medium uppercase tracking-wider mb-1">Questions/Img</div>
-                <div className="text-2xl font-bold text-blue-700">{preview.questionsPerImage}</div>
+                <div className="text-2xl font-bold text-blue-700">12</div>
+              </div>
+
+              <div className="bg-indigo-50 p-4 rounded-xl border border-indigo-100">
+                <div className="text-xs text-indigo-700 font-medium uppercase tracking-wider mb-1">Total Question Instances</div>
+                <div className="text-2xl font-bold text-indigo-700">{preview.matchedImages * 12}</div>
               </div>
             </div>
 

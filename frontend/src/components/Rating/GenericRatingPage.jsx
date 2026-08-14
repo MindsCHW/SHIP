@@ -46,10 +46,20 @@ const GenericRatingPage = ({ rowData = {}, config }) => {
   const getInitialState = () => {
     const ratings = {};
     const remarks = {};
-    parameters.forEach(param => {
-      ratings[param.key] = '10';
-      remarks[param.key] = '';
-    });
+    
+    // Check if rowData has existing ratings from backend
+    if (rowData?.ratings && rowData.ratings.length > 0) {
+      rowData.ratings.forEach(r => {
+        ratings[r.parameterKey] = r.score !== undefined ? String(r.score) : '10';
+        remarks[r.parameterKey] = r.remark || '';
+      });
+    } else {
+      parameters.forEach(param => {
+        ratings[param.key] = '10';
+        remarks[param.key] = '';
+      });
+    }
+
     return {
       ratings,
       remarks,
@@ -233,109 +243,127 @@ const GenericRatingPage = ({ rowData = {}, config }) => {
 
             <h2 className="text-lg font-medium text-center mb-2 mt-0 border-b pb-1 text-gray-800">Rating Parameters</h2>
 
-            {/* Parameters Row */}
-            <div className="flex flex-col xl:flex-row gap-6 w-full mb-0">
-              {parameters.map(param => {
-                const key = param.key;
-                const title = param.title;
-                return (
-                  <div key={key} className="flex flex-col border border-borderColor p-4 rounded bg-gray-50/30 shadow-sm flex-1">
-                    <div className="flex items-center justify-between mb-3 border-b border-gray-100 pb-2">
-                      <h3 className="font-medium text-lg text-gray-800">{title}</h3>
-                      <div className="flex items-center gap-4">
-                        <label className="flex items-center gap-1.5 cursor-pointer group">
-                          <input
-                            type="radio"
-                            name={`rectified-${key}`}
-                            value="Rectified"
-                            checked={remarks[key] === 'Rectified'}
-                            onChange={() => {
-                              setRemarks(prev => ({ ...prev, [key]: 'Rectified' }));
-                              setRatings(prev => ({ ...prev, [key]: '10' }));
-                            }}
-                            className="w-4 h-4 text-blue-600 focus:ring-blue-500"
-                          />
-                          <span className="text-sm font-medium text-gray-700">Rectified</span>
-                        </label>
-                        <label className="flex items-center gap-1.5 cursor-pointer group">
-                          <input
-                            type="radio"
-                            name={`rectified-${key}`}
-                            value="Not Rectified"
-                            checked={remarks[key] === 'Not Rectified'}
-                            onChange={() => {
-                              setRemarks(prev => ({ ...prev, [key]: 'Not Rectified' }));
-                              setRatings(prev => ({ ...prev, [key]: '5' }));
-                            }}
-                            className="w-4 h-4 text-blue-600 focus:ring-blue-500"
-                          />
-                          <span className="text-sm font-medium text-gray-700">Not Rectified</span>
-                        </label>
-                        <button onClick={() => handleUndo(key)} className="text-gray-400 hover:text-red-500 transition-colors p-1 ml-1 border-l border-gray-200 pl-3" aria-label={`Undo ${title} changes`} title="Undo changes">
-                          <MdUndo className="text-lg" />
-                        </button>
-                      </div>
-                    </div>
-                    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 mt-auto">
-                      <div className="flex gap-4 shrink-0">
-                        {['0', '1', '5', '10'].map(val => {
-                          const isRed = val === '0' || val === '1';
-                          const colorClass = isRed 
-                            ? 'text-red-500 focus:ring-red-500 accent-red-500' 
-                            : 'text-[#5cb85c] focus:ring-[#5cb85c] accent-[#5cb85c]';
-                          
-                          return (
-                            <label key={val} className="flex items-center gap-1.5 sm:gap-2 cursor-pointer group">
-                              <input 
-                                type="radio" 
-                                name={key} 
-                                value={val}
-                                checked={ratings[key] === val}
-                                onChange={(e) => setRatings(prev => ({ ...prev, [key]: e.target.value }))}
-                                onKeyDown={(e) => e.preventDefault()}
-                                onClick={(e) => e.target.blur()}
-                                className={`w-4 h-4 border-gray-300 ${colorClass}`} 
+            {/* Parameters Grouped visually */}
+            <div className="flex flex-col gap-6 w-full mb-0">
+              {Object.entries(
+                parameters.reduce((acc, param) => {
+                  const group = param.group || 'General';
+                  if (!acc[group]) acc[group] = [];
+                  acc[group].push(param);
+                  return acc;
+                }, {})
+              ).map(([groupName, groupParams]) => (
+                <div key={groupName} className="flex flex-col gap-4">
+                  {groupName !== 'General' && (
+                    <h3 className="text-md font-bold text-gray-700 border-l-4 border-[#5cb85c] pl-3 py-1 bg-gray-50 uppercase tracking-wide">
+                      {groupName}
+                    </h3>
+                  )}
+                  <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+                    {groupParams.map(param => {
+                      const key = param.key;
+                      const title = param.title;
+                      return (
+                        <div key={key} className="flex flex-col border border-borderColor p-4 rounded bg-gray-50/30 shadow-sm">
+                          <div className="flex items-center justify-between mb-3 border-b border-gray-100 pb-2">
+                            <h3 className="font-medium text-md text-gray-800">{title}</h3>
+                            <div className="flex items-center gap-2">
+                              <label className="flex items-center gap-1 cursor-pointer group">
+                                <input
+                                  type="radio"
+                                  name={`rectified-${key}`}
+                                  value="Rectified"
+                                  checked={remarks[key] === 'Rectified'}
+                                  onChange={() => {
+                                    setRemarks(prev => ({ ...prev, [key]: 'Rectified' }));
+                                    setRatings(prev => ({ ...prev, [key]: '10' }));
+                                  }}
+                                  className="w-3.5 h-3.5 text-blue-600 focus:ring-blue-500"
+                                />
+                                <span className="text-[10px] font-medium text-gray-700 uppercase tracking-wider">Rectified</span>
+                              </label>
+                              <label className="flex items-center gap-1 cursor-pointer group ml-2">
+                                <input
+                                  type="radio"
+                                  name={`rectified-${key}`}
+                                  value="Not Rectified"
+                                  checked={remarks[key] === 'Not Rectified'}
+                                  onChange={() => {
+                                    setRemarks(prev => ({ ...prev, [key]: 'Not Rectified' }));
+                                    setRatings(prev => ({ ...prev, [key]: '5' }));
+                                  }}
+                                  className="w-3.5 h-3.5 text-blue-600 focus:ring-blue-500"
+                                />
+                                <span className="text-[10px] font-medium text-gray-700 uppercase tracking-wider">Not Rectified</span>
+                              </label>
+                              <button onClick={() => handleUndo(key)} className="text-gray-400 hover:text-red-500 transition-colors p-1 ml-1 border-l border-gray-200 pl-2" aria-label={`Undo ${title} changes`} title="Undo changes">
+                                <MdUndo className="text-sm" />
+                              </button>
+                            </div>
+                          </div>
+                          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 mt-auto">
+                            <div className="flex gap-4 shrink-0">
+                              {['0', '1', '5', '10'].map(val => {
+                                const isRed = val === '0' || val === '1';
+                                const colorClass = isRed 
+                                  ? 'text-red-500 focus:ring-red-500 accent-red-500' 
+                                  : 'text-[#5cb85c] focus:ring-[#5cb85c] accent-[#5cb85c]';
+                                
+                                return (
+                                  <label key={val} className="flex items-center gap-1.5 sm:gap-2 cursor-pointer group">
+                                    <input 
+                                      type="radio" 
+                                      name={key} 
+                                      value={val}
+                                      checked={ratings[key] === val}
+                                      onChange={(e) => setRatings(prev => ({ ...prev, [key]: e.target.value }))}
+                                      onKeyDown={(e) => e.preventDefault()}
+                                      onClick={(e) => e.target.blur()}
+                                      className={`w-4 h-4 border-gray-300 ${colorClass}`} 
+                                    />
+                                    <span className="text-sm font-medium text-gray-700 group-hover:text-gray-900">{val}</span>
+                                  </label>
+                                );
+                              })}
+                            </div>
+                            <div className="flex-1 w-full">
+                              <CustomDropdown 
+                                options={remarkOptions}
+                                value={remarks[key]}
+                                onChange={(val) => {
+                                  setGlobalReviewData(prevGlobal => {
+                                    const current = prevGlobal[currentPageIndex] || getInitialState();
+                                    const newRemarks = { ...current.remarks, [key]: val };
+                                    const newRatings = { ...current.ratings };
+                                    
+                                    if (val && val.toLowerCase() === 'rectified') {
+                                      newRatings[key] = '10';
+                                    } else if (val && val.toLowerCase() === 'not rectified') {
+                                      newRatings[key] = '5';
+                                    } else {
+                                      const resolvedRating = resolveRemarkRating(currentCategory, val);
+                                      if (resolvedRating !== null) {
+                                        newRatings[key] = resolvedRating;
+                                      }
+                                    }
+                                    
+                                    return {
+                                      ...prevGlobal,
+                                      [currentPageIndex]: { ...current, remarks: newRemarks, ratings: newRatings }
+                                    };
+                                  });
+                                }}
+                                placeholder="Remark"
+                                direction="up"
                               />
-                              <span className="text-sm font-medium text-gray-700 group-hover:text-gray-900">{val}</span>
-                            </label>
-                          );
-                        })}
-                      </div>
-                      <div className="flex-1 w-full">
-                        <CustomDropdown 
-                          options={remarkOptions}
-                          value={remarks[key]}
-                          onChange={(val) => {
-                            setGlobalReviewData(prevGlobal => {
-                              const current = prevGlobal[currentPageIndex] || getInitialState();
-                              const newRemarks = { ...current.remarks, [key]: val };
-                              const newRatings = { ...current.ratings };
-                              
-                              if (val && val.toLowerCase() === 'rectified') {
-                                newRatings[key] = '10';
-                              } else if (val && val.toLowerCase() === 'not rectified') {
-                                newRatings[key] = '5';
-                              } else {
-                                const resolvedRating = resolveRemarkRating(currentCategory, val);
-                                if (resolvedRating !== null) {
-                                  newRatings[key] = resolvedRating;
-                                }
-                              }
-                              
-                              return {
-                                ...prevGlobal,
-                                [currentPageIndex]: { ...current, remarks: newRemarks, ratings: newRatings }
-                              };
-                            });
-                          }}
-                          placeholder="Remark"
-                          direction="up"
-                        />
-                      </div>
-                    </div>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
-                );
-              })}
+                </div>
+              ))}
             </div>
           </div>
         </div>

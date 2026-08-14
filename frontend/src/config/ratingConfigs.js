@@ -1,18 +1,18 @@
 export const roadwayConfig = {
   category: 'Roadway',
   parameters: [
-    { key: 'cracks', title: 'Cracks' },
-    { key: 'rutting', title: 'Rutting' },
-    { key: 'pothole', title: 'Pothole' },
-    { key: 'edgeDrop', title: 'Edge Drop' },
-    { key: 'unevenness', title: 'Unevenness' },
-    { key: 'vegetationGrowth', title: 'Vegetation Growth' },
-    { key: 'cleanliness', title: 'Cleanliness' },
-    { key: 'kerbPainting', title: 'Kerb Painting' },
-    { key: 'physicalCondition', title: 'Physical Condition' },
-    { key: 'edgeLineMarking', title: 'Edge Line Marking' },
-    { key: 'laneLineMarking', title: 'Lane Line Marking' },
-    { key: 'shyLineMarking', title: 'Shy Line Marking' }
+    { key: 'cracks', title: 'Cracks', group: 'Pavement' },
+    { key: 'rutting', title: 'Rutting', group: 'Pavement' },
+    { key: 'pothole', title: 'Pothole', group: 'Pavement' },
+    { key: 'edgeDrop', title: 'Edge Drop', group: 'Shoulder' },
+    { key: 'unevenness', title: 'Unevenness', group: 'Shoulder' },
+    { key: 'vegetationGrowth', title: 'Vegetation Growth', group: 'Shoulder' },
+    { key: 'cleanliness', title: 'Cleanliness', group: 'Kerb' },
+    { key: 'kerbPainting', title: 'Kerb Painting', group: 'Kerb' },
+    { key: 'physicalCondition', title: 'Physical Condition', group: 'Kerb' },
+    { key: 'edgeLineMarking', title: 'Edge Line Marking', group: 'Pavement Markings' },
+    { key: 'laneLineMarking', title: 'Lane Line Marking', group: 'Pavement Markings' },
+    { key: 'shyLineMarking', title: 'Shy Line Marking', group: 'Pavement Markings' }
   ],
   pagesData: [
     {

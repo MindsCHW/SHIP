@@ -78,7 +78,14 @@ class SurveyProcessingService {
 
         // Match roadType (All Types covers everything, otherwise it must match exactly)
         if (a.roadType && a.roadType !== 'All Types') {
-          if (a.roadType !== task.roadType) return false;
+          const normA = a.roadType.toLowerCase().replace(/\s+/g, '');
+          const normT = (task.roadType || '').toLowerCase().replace(/\s+/g, '');
+          
+          if (normA !== normT) {
+            if (!((normA === 'mcw' && normT === 'maincarriageway') || (normT === 'mcw' && normA === 'maincarriageway'))) {
+              return false;
+            }
+          }
         }
 
         // Match roadDirection
@@ -92,7 +99,7 @@ class SurveyProcessingService {
         // Match imageRequirement to surveyType
         const taskReq = task.imageRequirement || 'DAY';
         const assetReq = a.surveyType || 'DAY';
-        if (taskReq !== assetReq) return false;
+        if (taskReq !== 'BOTH' && taskReq !== assetReq) return false;
 
         return true;
       });
@@ -106,11 +113,15 @@ class SurveyProcessingService {
             const matchesChainage = c >= Math.min(a.coverage.startChainage, a.coverage.endChainage) && 
                                    c <= Math.max(a.coverage.startChainage, a.coverage.endChainage);
             if (!matchesChainage) return false;
-            if (a.roadType && a.roadType !== 'All Types' && a.roadType !== task.roadType) return false;
+            if (a.roadType && a.roadType !== 'All Types') {
+              const normA = a.roadType.toLowerCase().replace(/\s+/g, '');
+              const normT = (task.roadType || '').toLowerCase().replace(/\s+/g, '');
+              if (normA !== normT && !((normA === 'mcw' && normT === 'maincarriageway') || (normT === 'mcw' && normA === 'maincarriageway'))) return false;
+            }
             
             const taskReq = task.imageRequirement || 'DAY';
             const assetReq = a.surveyType || 'DAY';
-            if (taskReq !== assetReq) return false;
+            if (taskReq !== 'BOTH' && taskReq !== assetReq) return false;
 
             return true; // Match found regardless of direction
           });

@@ -220,48 +220,75 @@ class InspectionEngineService {
     const maxC = Math.max(startChainage, endChainage);
 
     const targetChainages = [];
-    for (let c = minC; c <= maxC; c += interval) {
+    const EPSILON = 0.0001; // Avoid floating point precision issues
+    for (let c = minC; c <= maxC + EPSILON; c += interval) {
       targetChainages.push(parseFloat(c.toFixed(3)));
     }
 
-    const matchedChainages = new Set();
-    const sourceSurveyIds = new Map(); // matched chainage (number) -> surveyAssetId
+    const sourceSurveyIds = new Map(); // target chainage (number) -> surveyAssetId
+    const extractionTargets = new Map(); // target chainage -> closest video chainage
 
     for (const target of targetChainages) {
       const closest = this._getClosestChainage(target, availableChainages);
       if (closest !== null) {
-        matchedChainages.add(closest);
+        extractionTargets.set(target, closest);
         const sourceAsset = chainageSourceMap.get(closest);
         if (sourceAsset) {
-          sourceSurveyIds.set(closest, sourceAsset._id.toString());
+          sourceSurveyIds.set(target, sourceAsset._id.toString());
         }
       }
     }
 
-    const uniqueMatched = Array.from(matchedChainages);
+    const uniqueMatched = targetChainages; // Exact intervals
+
+    // We need to check for existing images under BOTH the exact target string (if extracted previously via Roadway batch) 
+    // AND the closest VTT frame string (if extracted previously via Standard batch).
+    const chainageQueries = [];
+    for (const target of uniqueMatched) {
+      chainageQueries.push(target.toFixed(3));
+      chainageQueries.push(target.toString()); // without trailing zeros
+      const closest = extractionTargets.get(target);
+      if (closest !== undefined) {
+        chainageQueries.push(closest.toFixed(3));
+        chainageQueries.push(closest.toString());
+      }
+    }
 
     // Check which ones already have images extracted in previous InspectionTasks
     const existingTasks = await InspectionTask.find({
       project,
-      chainage: { $in: uniqueMatched.map(c => c.toFixed(3)) },
+      chainage: { $in: chainageQueries },
       'image.cloudinaryUrl': { $exists: true, $ne: null }
     }).select('chainage image.cloudinaryUrl extractionDiagnostics');
 
     const existingImageMap = {};
     for (const task of existingTasks) {
+      // Create a normalized lookup for the task chainage
+      const parsedChainage = parseFloat(task.chainage);
       if (surveyAssetId === 'all') {
-        if (!existingImageMap[task.chainage]) {
-          existingImageMap[task.chainage] = task.image.cloudinaryUrl;
-        }
+        existingImageMap[parsedChainage] = task.image.cloudinaryUrl;
       } else {
-        if (!existingImageMap[task.chainage] || (task.extractionDiagnostics && task.extractionDiagnostics.surveyAssetId?.toString() === surveyAssetId)) {
-          existingImageMap[task.chainage] = task.image.cloudinaryUrl;
+        if (!existingImageMap[parsedChainage] || (task.extractionDiagnostics && task.extractionDiagnostics.surveyAssetId?.toString() === surveyAssetId)) {
+          existingImageMap[parsedChainage] = task.image.cloudinaryUrl;
         }
       }
     }
 
+    let existingCount = 0;
+    const finalImageMap = {};
+    for (const target of uniqueMatched) {
+      const targetNum = parseFloat(target.toFixed(3));
+      const closestNum = extractionTargets.get(target);
+      
+      // If we have an image for the exact target or the closest VTT frame, reuse it!
+      const reusedUrl = existingImageMap[targetNum] || (closestNum !== undefined ? existingImageMap[closestNum] : null);
+      if (reusedUrl) {
+        finalImageMap[targetNum.toFixed(3)] = reusedUrl;
+        existingCount++;
+      }
+    }
+
     const matchedCount = uniqueMatched.length;
-    const existingCount = Object.keys(existingImageMap).length;
     const missingCount = matchedCount - existingCount;
 
     return {
@@ -276,8 +303,9 @@ class InspectionEngineService {
       existingImages: existingCount,
       missingExtractionImages: missingCount,
       uniqueMatchedChainages: uniqueMatched,
-      existingImageMap,
-      sourceSurveyIds
+      existingImageMap: finalImageMap,
+      sourceSurveyIds,
+      extractionTargets
     };
   }
 
@@ -327,6 +355,21 @@ class InspectionEngineService {
       isSamplingHistoryReset: false
     };
 
+    const ROADWAY_PARAMETERS = [
+      { key: 'cracks', title: 'Cracks', group: 'Pavement' },
+      { key: 'rutting', title: 'Rutting', group: 'Pavement' },
+      { key: 'pothole', title: 'Pothole', group: 'Pavement' },
+      { key: 'edgeDrop', title: 'Edge Drop', group: 'Shoulder' },
+      { key: 'unevenness', title: 'Unevenness', group: 'Shoulder' },
+      { key: 'vegetationGrowth', title: 'Vegetation Growth', group: 'Shoulder' },
+      { key: 'cleanliness', title: 'Cleanliness', group: 'Kerb' },
+      { key: 'kerbPainting', title: 'Kerb Painting', group: 'Kerb' },
+      { key: 'physicalCondition', title: 'Physical Condition', group: 'Kerb' },
+      { key: 'edgeLineMarking', title: 'Edge Line Marking', group: 'Pavement Markings' },
+      { key: 'laneLineMarking', title: 'Lane Line Marking', group: 'Pavement Markings' },
+      { key: 'shyLineMarking', title: 'Shy Line Marking', group: 'Pavement Markings' }
+    ];
+
     const tasksData = [];
     
     for (const chainage of samplingData.uniqueMatchedChainages) {
@@ -338,14 +381,23 @@ class InspectionEngineService {
       const task = {
         project,
         chainage: chainageStr,
+        category: 'Roadway',
         assetType: 'Roadway',
         assetSubType: '',
         roadType: 'Main Carriageway', // Usually continuous is MCW, but we leave it as default or fetch from survey
-        imageRequirement: samplingData.surveyType || 'DAY',
+        imageRequirement: samplingData.surveyType === 'MIXED' ? 'BOTH' : (samplingData.surveyType || 'DAY'),
         parameters: [], // Empty as we don't use MasterList for Roadway
+        ratings: ROADWAY_PARAMETERS.map(p => ({
+          parameterKey: p.key,
+          parameterName: p.title,
+          parameterGroup: p.group,
+          score: 10,
+          remark: ''
+        })),
         status: taskStatus,
         extractionDiagnostics: {
-          surveyAssetId: samplingData.surveyAssetId === 'all' ? samplingData.sourceSurveyIds.get(chainage) : surveyAssetId
+          surveyAssetId: samplingData.surveyAssetId === 'all' ? samplingData.sourceSurveyIds.get(chainage) : surveyAssetId,
+          calculatedTimestamp: `Closest VTT match: ${samplingData.extractionTargets.get(chainage)?.toFixed(3)}`
         }
       };
 

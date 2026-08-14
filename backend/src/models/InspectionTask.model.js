@@ -15,6 +15,10 @@ const inspectionTaskSchema = new mongoose.Schema(
       required: true,
       index: true
     },
+    category: {
+      type: String,
+      index: true
+    },
     assetType: {
       type: String,
       index: true
@@ -45,6 +49,10 @@ const inspectionTaskSchema = new mongoose.Schema(
         type: String,
         trim: true
       },
+      parameterGroup: {
+        type: String,
+        trim: true
+      },
       score: {
         type: Number,
         default: 10
@@ -61,7 +69,7 @@ const inspectionTaskSchema = new mongoose.Schema(
     },
     imageRequirement: {
       type: String,
-      enum: ['DAY', 'NIGHT'],
+      enum: ['DAY', 'NIGHT', 'BOTH'],
       default: 'DAY',
       index: true
     },
