@@ -331,11 +331,20 @@ const exportRatingsCSV = async (projectId) => {
 
     if (task.ratings && task.ratings.length > 0) {
       task.ratings.forEach(rating => {
-        // Find matching parameter
-        const param = task.parameters.find(p => p._id.toString() === rating.masterListId.toString());
-        const category = param ? param.category : '-';
-        const paramText = param ? param.parameter : '-';
-        const direction = param && param.direction ? param.direction : '-';
+        let category = '-';
+        let paramText = '-';
+        let direction = '-';
+
+        if (rating.masterListId) {
+          const param = task.parameters.find(p => p._id.toString() === rating.masterListId.toString());
+          category = param ? param.category : '-';
+          paramText = param ? param.parameter : '-';
+          direction = param && param.direction ? param.direction : '-';
+        } else if (rating.parameterKey) {
+          category = task.assetType || 'Roadway';
+          paramText = rating.parameterName || rating.parameterKey;
+          direction = '-';
+        }
         
         const row = [
           `"${assetId}"`,
