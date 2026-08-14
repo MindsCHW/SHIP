@@ -241,21 +241,36 @@ class InspectionEngineService {
     const uniqueMatched = Array.from(matchedChainages);
 
     // Check which ones already have images extracted in previous InspectionTasks
+    const chainageQueries = uniqueMatched.flatMap(c => {
+      const cNum = Number(c);
+      return [
+        cNum.toString(),
+        cNum.toFixed(1),
+        cNum.toFixed(2),
+        cNum.toFixed(3)
+      ];
+    });
+
     const existingTasks = await InspectionTask.find({
       project,
-      chainage: { $in: uniqueMatched.map(c => c.toFixed(3)) },
+      chainage: { $in: chainageQueries },
       'image.cloudinaryUrl': { $exists: true, $ne: null }
     }).select('chainage image.cloudinaryUrl extractionDiagnostics');
 
     const existingImageMap = {};
     for (const task of existingTasks) {
+      const taskChainageNum = parseFloat(task.chainage);
+      if (isNaN(taskChainageNum)) continue;
+      
+      const chainageKey = taskChainageNum.toFixed(3);
+
       if (surveyAssetId === 'all') {
-        if (!existingImageMap[task.chainage]) {
-          existingImageMap[task.chainage] = task.image.cloudinaryUrl;
+        if (!existingImageMap[chainageKey]) {
+          existingImageMap[chainageKey] = task.image.cloudinaryUrl;
         }
       } else {
-        if (!existingImageMap[task.chainage] || (task.extractionDiagnostics && task.extractionDiagnostics.surveyAssetId?.toString() === surveyAssetId)) {
-          existingImageMap[task.chainage] = task.image.cloudinaryUrl;
+        if (!existingImageMap[chainageKey] || (task.extractionDiagnostics && task.extractionDiagnostics.surveyAssetId?.toString() === surveyAssetId)) {
+          existingImageMap[chainageKey] = task.image.cloudinaryUrl;
         }
       }
     }
