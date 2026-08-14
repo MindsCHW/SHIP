@@ -1,4 +1,5 @@
 'use strict';
+// Trigger restart
 
 require('dotenv').config();
 
