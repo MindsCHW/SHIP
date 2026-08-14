@@ -289,18 +289,13 @@ class InspectionEngineService {
     
     const samplingData = await this._calculateRoadwaySampling(project, surveyAssetId, startChainage, endChainage, intervalMetres);
     
-    // Calculate total question instances
-    // For Roadway, we fetch Kerb, Shoulder, and Pavement MasterList parameters
-    const masterList = await masterListRepository.getMasterList({ 
-      project, 
-      status: 'Active',
-      assetType: { $in: ['Kerb', 'Shoulder', 'Pavement'] }
-    });
+    // Fixed Roadway Question Configuration: 12 Parameters
+    const ROADWAY_PARAMETERS_COUNT = 12;
 
     return {
       ...samplingData,
-      questionsPerImage: masterList.length,
-      totalQuestionInstances: samplingData.matchedImages * masterList.length
+      questionsPerImage: ROADWAY_PARAMETERS_COUNT,
+      totalQuestionInstances: samplingData.matchedImages * ROADWAY_PARAMETERS_COUNT
     };
   }
 
@@ -309,20 +304,13 @@ class InspectionEngineService {
     
     const samplingData = await this._calculateRoadwaySampling(project, surveyAssetId, startChainage, endChainage, intervalMetres);
     
-    const masterListPopulation = await masterListRepository.getMasterList({ 
-      project, 
-      status: 'Active',
-      assetType: { $in: ['Kerb', 'Shoulder', 'Pavement'] }
-    });
-
-    if (masterListPopulation.length === 0) {
-      throw new Error('No active Master List questions found for Kerb, Shoulder, or Pavement in this project.');
-    }
+    // Fixed Roadway Question Configuration: 12 Parameters
+    const ROADWAY_PARAMETERS_COUNT = 12;
 
     const name = `Roadway-${project}-${new Date().toISOString().slice(0, 10)}-${Math.floor(Math.random() * 1000)}`;
     
     // In continuous sampling, we don't randomly sample. We inspect ALL matched chainages.
-    const selectedQuestionsCount = samplingData.matchedImages * masterListPopulation.length;
+    const selectedQuestionsCount = samplingData.matchedImages * ROADWAY_PARAMETERS_COUNT;
 
     const newBatchData = {
       name,
@@ -331,7 +319,7 @@ class InspectionEngineService {
       assetTypes: ['Roadway', 'Kerb', 'Shoulder', 'Pavement'],
       samplingPercentage: 100, // It's 100% of the selected interval
       samplingStrategy: 'CONTINUOUS',
-      totalMasterQuestions: masterListPopulation.length,
+      totalMasterQuestions: ROADWAY_PARAMETERS_COUNT,
       selectedQuestionsCount,
       uniqueChainagesCount: samplingData.matchedImages,
       status: 'WAITING_FOR_IMAGES',
@@ -345,7 +333,7 @@ class InspectionEngineService {
       const chainageStr = chainage.toFixed(3);
       const existingImageUrl = samplingData.existingImageMap[chainageStr];
       
-      const taskStatus = existingImageUrl ? 'READY_FOR_REVIEW' : 'PENDING_IMAGE';
+      const taskStatus = existingImageUrl ? 'READY_FOR_RATING' : 'PENDING_IMAGE';
       
       const task = {
         project,
@@ -354,7 +342,7 @@ class InspectionEngineService {
         assetSubType: '',
         roadType: 'Main Carriageway', // Usually continuous is MCW, but we leave it as default or fetch from survey
         imageRequirement: samplingData.surveyType || 'DAY',
-        parameters: masterListPopulation.map(p => p._id),
+        parameters: [], // Empty as we don't use MasterList for Roadway
         status: taskStatus,
         extractionDiagnostics: {
           surveyAssetId: samplingData.surveyAssetId === 'all' ? samplingData.sourceSurveyIds.get(chainage) : surveyAssetId
@@ -363,6 +351,8 @@ class InspectionEngineService {
 
       if (existingImageUrl) {
         task.image = { cloudinaryUrl: existingImageUrl };
+        task.imageApproved = true;
+        task.approvedAt = new Date();
       }
 
       tasksData.push(task);
@@ -372,7 +362,7 @@ class InspectionEngineService {
     
     // Update batch status if all tasks already have images
     if (samplingData.missingExtractionImages === 0) {
-      batch.status = 'READY_FOR_REVIEW';
+      batch.status = 'READY_FOR_RATING';
       await batch.save();
     }
     

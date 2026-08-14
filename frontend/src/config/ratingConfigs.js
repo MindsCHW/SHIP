@@ -3,7 +3,16 @@ export const roadwayConfig = {
   parameters: [
     { key: 'cracks', title: 'Cracks' },
     { key: 'rutting', title: 'Rutting' },
-    { key: 'pothole', title: 'Pothole' }
+    { key: 'pothole', title: 'Pothole' },
+    { key: 'edgeDrop', title: 'Edge Drop' },
+    { key: 'unevenness', title: 'Unevenness' },
+    { key: 'vegetationGrowth', title: 'Vegetation Growth' },
+    { key: 'cleanliness', title: 'Cleanliness' },
+    { key: 'kerbPainting', title: 'Kerb Painting' },
+    { key: 'physicalCondition', title: 'Physical Condition' },
+    { key: 'edgeLineMarking', title: 'Edge Line Marking' },
+    { key: 'laneLineMarking', title: 'Lane Line Marking' },
+    { key: 'shyLineMarking', title: 'Shy Line Marking' }
   ],
   pagesData: [
     {
