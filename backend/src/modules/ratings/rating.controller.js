@@ -109,7 +109,7 @@ const saveTaskRatings = asyncHandler(async (req, res) => {
 });
 
 const exportRatingsCSV = asyncHandler(async (req, res) => {
-  const csvData = await ratingService.exportRatingsCSV(req.params.projectId);
+  const csvData = await ratingService.exportRatingsCSV(req.params.projectId, req.query.batchId);
   res.setHeader('Content-Type', 'text/csv');
   res.setHeader('Content-Disposition', `attachment; filename=Ratings_${req.params.projectId}.csv`);
   res.send(csvData);

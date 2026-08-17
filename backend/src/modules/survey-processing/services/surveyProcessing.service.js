@@ -67,67 +67,60 @@ class SurveyProcessingService {
 
     for (const task of tasks) {
       const c = parseFloat(task.chainage);
-      let foundAsset = assets.find(a => {
-        if (!a.coverage) return false;
+      const taskDirection = task.parameters && task.parameters.length > 0 ? task.parameters[0].direction : 'N/A';
+      const taskReq = task.imageRequirement || 'DAY';
+      
+      let bestAsset = null;
+      let highestScore = -1;
+
+      for (const a of assets) {
+        if (!a.coverage) continue;
         
-        // Match chainage bounds
+        // Basic eligibility: Chainage must be covered
         const matchesChainage = c >= Math.min(a.coverage.startChainage, a.coverage.endChainage) && 
                                c <= Math.max(a.coverage.startChainage, a.coverage.endChainage);
-                               
-        if (!matchesChainage) return false;
+        
+        if (!matchesChainage) continue;
 
-        // Match roadType (All Types covers everything, otherwise it must match exactly)
-        if (a.roadType && a.roadType !== 'All Types') {
-          if (a.roadType !== task.roadType) return false;
+        let score = 10; // Chainage matches
+        
+        // Priority: Video and VTT paths exist
+        if (a.video && a.video.path) score += 20;
+        if (a.vtt && a.vtt.path) score += 20;
+        
+        // Priority: Road Type Match
+        if (a.roadType === task.roadType) {
+          score += 10;
+        } else if (a.roadType === 'All Types') {
+          score += 5;
         }
 
-        // Match roadDirection
-        const taskDirection = task.parameters && task.parameters.length > 0 ? task.parameters[0].direction : 'N/A';
+        // Priority: Direction Match
         if (taskDirection === 'LHS' || taskDirection === 'RHS') {
-          if (a.roadDirection && a.roadDirection !== taskDirection) {
-            return false;
-          }
+          if (a.roadDirection === taskDirection) score += 10;
+        } else {
+          score += 5; 
         }
 
-        // Match imageRequirement to surveyType
-        const taskReq = task.imageRequirement || 'DAY';
+        // Priority: Survey Type Match
         const assetReq = a.surveyType || 'DAY';
-        if (taskReq !== assetReq) return false;
-
-        return true;
-      });
-
-      if (!foundAsset) {
-        const taskDirection = task.parameters && task.parameters.length > 0 ? task.parameters[0].direction : 'N/A';
-        if (taskDirection === 'LHS' || taskDirection === 'RHS') {
-          // Check if it's purely a direction mismatch
-          const hasAssetWithoutDir = assets.find(a => {
-            if (!a.coverage) return false;
-            const matchesChainage = c >= Math.min(a.coverage.startChainage, a.coverage.endChainage) && 
-                                   c <= Math.max(a.coverage.startChainage, a.coverage.endChainage);
-            if (!matchesChainage) return false;
-            if (a.roadType && a.roadType !== 'All Types' && a.roadType !== task.roadType) return false;
-            
-            const taskReq = task.imageRequirement || 'DAY';
-            const assetReq = a.surveyType || 'DAY';
-            if (taskReq !== assetReq) return false;
-
-            return true; // Match found regardless of direction
-          });
-
-          if (hasAssetWithoutDir) {
-            task.extractionDiagnostics = { failureReason: 'No matching Survey Asset found for this Road Direction.' };
-            task.status = 'EXTRACTION_FAILED';
-            unmappedTasks.push(task);
-            continue;
-          }
+        if (taskReq === assetReq) score += 10;
+        
+        if (score > highestScore) {
+          highestScore = score;
+          bestAsset = a;
         }
+      }
+
+      if (!bestAsset) {
+        task.extractionDiagnostics = { failureReason: 'No Survey Asset covers this chainage' };
+        task.status = 'EXTRACTION_FAILED';
         unmappedTasks.push(task);
       } else {
-        if (!taskGroups.has(foundAsset._id.toString())) {
-          taskGroups.set(foundAsset._id.toString(), { asset: foundAsset, tasks: [] });
+        if (!taskGroups.has(bestAsset._id.toString())) {
+          taskGroups.set(bestAsset._id.toString(), { asset: bestAsset, tasks: [] });
         }
-        taskGroups.get(foundAsset._id.toString()).tasks.push(task);
+        taskGroups.get(bestAsset._id.toString()).tasks.push(task);
       }
     }
 
@@ -163,6 +156,13 @@ class SurveyProcessingService {
           asset.status = 'PROCESSING';
           await asset.save();
           
+          if (!fs.existsSync(asset.video.path)) {
+            throw new Error('VIDEO_NOT_FOUND');
+          }
+          if (!fs.existsSync(asset.vtt.path)) {
+            throw new Error('VTT_NOT_FOUND');
+          }
+
           const resultsJsonPath = await this.runPythonExtractor(cliPath, asset.video.path, asset.vtt.path, outputDir, chainagesStr);
           const results = JSON.parse(fs.readFileSync(resultsJsonPath, 'utf8'));
           

@@ -309,11 +309,17 @@ const saveTaskRatings = async (taskId, ratingsData, selectedImageUrl, user) => {
 /**
  * Export completed ratings to CSV
  */
-const exportRatingsCSV = async (projectId) => {
-  const tasks = await InspectionTask.find({ 
+const exportRatingsCSV = async (projectId, batchId) => {
+  const query = { 
     project: projectId, 
     status: 'COMPLETED' 
-  })
+  };
+  
+  if (batchId) {
+    query.batchId = batchId;
+  }
+
+  const tasks = await InspectionTask.find(query)
     .populate('parameters')
     .sort({ chainage: 1 });
 
@@ -343,7 +349,7 @@ const exportRatingsCSV = async (projectId) => {
         } else if (rating.parameterKey) {
           category = task.assetType || 'Roadway';
           paramText = rating.parameterName || rating.parameterKey;
-          direction = '-';
+          direction = task.direction || '-';
         }
         
         const row = [

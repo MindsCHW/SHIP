@@ -6,6 +6,7 @@ const SamplingStrategyFactory = require('./strategies/samplingStrategyFactory');
 const SurveyAsset = require('../../../models/SurveyAsset.model');
 const InspectionTask = require('../../../models/InspectionTask.model');
 const fs = require('fs');
+const { ROADWAY_PARAMETER_CONFIG } = require('../../../constants/roadwayConfig');
 
 class InspectionEngineService {
   async createBatch(userId, batchData) {
@@ -342,32 +343,41 @@ class InspectionEngineService {
       isSamplingHistoryReset: false
     };
 
+    const SurveyAsset = require('../../../models/SurveyAsset.model');
+    const surveyAssets = await SurveyAsset.find({ project }).select('_id roadDirection');
+    const assetDirectionMap = new Map(surveyAssets.map(a => [a._id.toString(), a.roadDirection || '-']));
+
     const tasksData = [];
     
     for (const chainage of samplingData.uniqueMatchedChainages) {
       const chainageStr = chainage.toFixed(3);
       const existingImageUrl = samplingData.existingImageMap[chainageStr];
       
-      const taskStatus = existingImageUrl ? 'READY_FOR_RATING' : 'PENDING_IMAGE';
+      const taskStatus = existingImageUrl ? 'READY_FOR_REVIEW' : 'PENDING_IMAGE';
       
+      const actualAssetId = samplingData.surveyAssetId === 'all' ? samplingData.sourceSurveyIds.get(chainage) : surveyAssetId;
+      const direction = actualAssetId ? assetDirectionMap.get(actualAssetId.toString()) || '-' : '-';
+
       const task = {
         project,
+        category: 'Roadway',
         chainage: chainageStr,
         assetType: 'Roadway',
         assetSubType: '',
+        direction,
         roadType: 'Main Carriageway', // Usually continuous is MCW, but we leave it as default or fetch from survey
         imageRequirement: samplingData.surveyType || 'DAY',
         parameters: [], // Empty as we don't use MasterList for Roadway
+        ratings: ROADWAY_PARAMETER_CONFIG,
         status: taskStatus,
         extractionDiagnostics: {
-          surveyAssetId: samplingData.surveyAssetId === 'all' ? samplingData.sourceSurveyIds.get(chainage) : surveyAssetId
+          surveyAssetId: actualAssetId
         }
       };
 
       if (existingImageUrl) {
         task.image = { cloudinaryUrl: existingImageUrl };
-        task.imageApproved = true;
-        task.approvedAt = new Date();
+        // Wait for user to approve in Image Review before marking as approved
       }
 
       tasksData.push(task);

@@ -73,15 +73,15 @@ const RoadSummaryPage = () => {
               _id: task._id,
               assetId: (task._id || '').toString().slice(-6).toUpperCase(),
               project: task.project || firstParam.project,
-              category: firstParam.category || '-',
+              category: task.category || firstParam.category || '-',
               assetType: task.assetSubType ? `${task.assetType} (${task.assetSubType})` : (task.assetType || firstParam.assetType || '-'),
               chainage: task.chainage,
-              parameterCount: task.parameters?.length || 0,
+              parameterCount: task.category === 'Roadway' ? (task.ratings?.length || 0) : (task.parameters?.length || 0),
               taskGlobalIndex: globalIndex,
               status: task.status,
               createdAt: task.createdAt,
-              direction: firstParam.direction || '-',
-              roadType: firstParam.roadType || '-'
+              direction: task.direction || firstParam.direction || '-',
+              roadType: task.roadType || firstParam.roadType || '-'
             };
           });
           setQuestions(tasksAsAssets);
@@ -117,15 +117,15 @@ const RoadSummaryPage = () => {
                 _id: task._id,
                 assetId: (task._id || '').toString().slice(-6).toUpperCase(),
                 project: task.project || firstParam.project,
-                category: firstParam.category || '-',
+                category: task.category || firstParam.category || '-',
                 assetType: task.assetSubType ? `${task.assetType} (${task.assetSubType})` : (task.assetType || firstParam.assetType || '-'),
                 chainage: task.chainage,
-                parameterCount: task.parameters?.length || 0,
+                parameterCount: task.category === 'Roadway' ? (task.ratings?.length || 0) : (task.parameters?.length || 0),
                 taskGlobalIndex: globalIndex,
                 status: task.status,
                 createdAt: task.createdAt,
-                direction: firstParam.direction || '-',
-                roadType: firstParam.roadType || '-'
+                direction: task.direction || firstParam.direction || '-',
+                roadType: task.roadType || firstParam.roadType || '-'
               };
             });
             setQuestions(tasksAsAssets);
@@ -183,7 +183,7 @@ const RoadSummaryPage = () => {
   
   const handleExportCSV = async () => {
     try {
-      const response = await ratingService.exportRatingsCSV(roadId);
+      const response = await ratingService.exportRatingsCSV(roadId, activeBatchId);
       const blob = new Blob([response], { type: 'text/csv' });
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');

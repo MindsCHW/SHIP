@@ -26,10 +26,11 @@ export const ratingService = {
   },
 
   /**
-   * Export all ratings for a project to CSV
+   * Export all ratings for a project to CSV, optionally filtered by batch
    */
-  async exportRatingsCSV(projectId) {
-    const response = await api.get(`/ratings/project/${projectId}/export`, {
+  async exportRatingsCSV(projectId, batchId) {
+    const url = batchId ? `/ratings/project/${projectId}/export?batchId=${batchId}` : `/ratings/project/${projectId}/export`;
+    const response = await api.get(url, {
       responseType: 'blob',
     });
     return response.data;

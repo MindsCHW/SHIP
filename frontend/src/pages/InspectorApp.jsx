@@ -30,7 +30,8 @@ const buildInitialRatings = (task) => {
   if (task.ratings && task.ratings.length > 0) {
     const map = {};
     task.ratings.forEach(r => {
-      map[r.masterListId] = { score: String(r.score ?? 10), remark: r.remark || '' };
+      const key = task.category === 'Roadway' ? r.parameterKey : r.masterListId;
+      map[key] = { score: String(r.score ?? 10), remark: r.remark || '' };
     });
     return map;
   }
@@ -132,11 +133,11 @@ const InspectorApp = () => {
   };
 
   const metaHeaders = currentTask ? [
-    { key: 'category',  label: 'Category',   value: firstParam.category  || '-' },
+    { key: 'category',  label: 'Category',   value: currentTask.category || firstParam.category  || '-' },
     { key: 'assetType', label: 'Asset type', value: displayAssetType() },
-    { key: 'direction', label: 'Direction',  value: firstParam.direction || '-' },
-    { key: 'roadType',  label: 'Road Type',  value: firstParam.roadType  || '-' },
-    { key: 'placement', label: 'Placement',  value: firstParam.placement || '-' },
+    { key: 'direction', label: 'Direction',  value: currentTask.direction || firstParam.direction || '-' },
+    { key: 'roadType',  label: 'Road Type',  value: currentTask.roadType || firstParam.roadType  || '-' },
+    { key: 'placement', label: 'Placement',  value: currentTask.placement || firstParam.placement || '-' },
     { key: 'chainage',  label: 'Chainage',   value: currentTask.chainage || '-' }
   ] : [];
 
@@ -144,11 +145,22 @@ const InspectorApp = () => {
     if (!currentTask) return true;
     try {
       setSaving(true);
-      const ratingsPayload = (currentTask.parameters || []).map(p => ({
-        masterListId: p._id,
-        score: Number(taskRatings[p._id]?.score ?? 10),
-        remark: taskRatings[p._id]?.remark || ''
-      }));
+      let ratingsPayload = [];
+      if (currentTask.category === 'Roadway') {
+        ratingsPayload = (currentTask.ratings || []).map(p => ({
+          parameterKey: p.parameterKey,
+          parameterName: p.parameterName,
+          group: p.group,
+          score: Number(taskRatings[p.parameterKey]?.score ?? 10),
+          remark: taskRatings[p.parameterKey]?.remark || ''
+        }));
+      } else {
+        ratingsPayload = (currentTask.parameters || []).map(p => ({
+          masterListId: p._id,
+          score: Number(taskRatings[p._id]?.score ?? 10),
+          remark: taskRatings[p._id]?.remark || ''
+        }));
+      }
       
       const selectedImageUrl = images[activeImageIndex]?.url;
       
@@ -244,7 +256,7 @@ const InspectorApp = () => {
   };
 
   // Dynamic Remarks Calculation
-  const currentCategory = firstParam.category || 'N/A';
+  const currentCategory = currentTask?.category || firstParam.category || 'N/A';
   const categoryRemarks = remarkMasterConfig[currentCategory] || [];
   const dynamicRemarkOptions = [...categoryRemarks, 'Other'];
 
@@ -258,24 +270,25 @@ const InspectorApp = () => {
   }
 
   const renderParamCard = (param) => {
-    const rating = getRating(param._id);
+    const pId = param.parameterKey || param._id;
+    const rating = getRating(pId);
     return (
       <div
-        key={param._id}
+        key={pId}
         className="flex flex-col border border-borderColor p-4 rounded bg-gray-50/30 shadow-sm flex-1 min-w-[300px]"
       >
         <div className="flex items-center justify-between mb-3 border-b border-gray-100 pb-2">
-          <h3 className="font-medium text-lg text-gray-800">{param.parameter}</h3>
+          <h3 className="font-medium text-lg text-gray-800">{param.parameterName || param.parameter}</h3>
           <div className="flex items-center gap-4">
             <label className="flex items-center gap-1.5 cursor-pointer group">
               <input
                 type="radio"
-                name={`rectified-${param._id}`}
+                name={`rectified-${pId}`}
                 value="Rectified"
                 checked={rating.remark === 'Rectified'}
                 onChange={() => {
-                  setRating(param._id, 'remark', 'Rectified');
-                  setRating(param._id, 'score', '10');
+                  setRating(pId, 'remark', 'Rectified');
+                  setRating(pId, 'score', '10');
                 }}
                 className="w-4 h-4 text-blue-600 focus:ring-blue-500"
               />
@@ -284,19 +297,19 @@ const InspectorApp = () => {
             <label className="flex items-center gap-1.5 cursor-pointer group">
               <input
                 type="radio"
-                name={`rectified-${param._id}`}
+                name={`rectified-${pId}`}
                 value="Not Rectified"
                 checked={rating.remark === 'Not Rectified'}
                 onChange={() => {
-                  setRating(param._id, 'remark', 'Not Rectified');
-                  setRating(param._id, 'score', '5');
+                  setRating(pId, 'remark', 'Not Rectified');
+                  setRating(pId, 'score', '5');
                 }}
                 className="w-4 h-4 text-blue-600 focus:ring-blue-500"
               />
               <span className="text-sm font-medium text-gray-700">Not Rectified</span>
             </label>
             <button
-              onClick={() => handleUndo(param._id)}
+              onClick={() => handleUndo(pId)}
               className="text-gray-400 hover:text-red-500 transition-colors p-1 ml-1 border-l border-gray-200 pl-3"
               title="Undo changes"
             >
@@ -315,10 +328,13 @@ const InspectorApp = () => {
                 <label key={val} className="flex items-center gap-1.5 sm:gap-2 cursor-pointer group">
                   <input
                     type="radio"
-                    name={`rating-${param._id}`}
+                    name={`rating-${pId}`}
                     value={val}
                     checked={rating.score === val}
-                    onChange={(e) => setRating(param._id, 'score', e.target.value)}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setRating(pId, 'score', val);
+                    }}
                     onKeyDown={(e) => e.preventDefault()}
                     onClick={(e) => e.target.blur()}
                     className={`w-4 h-4 border-gray-300 ${colorClass}`}
@@ -329,20 +345,20 @@ const InspectorApp = () => {
             })}
           </div>
           <div className="flex-1 w-full">
-            {customRemarkMode[param._id] || (rating.remark && !dynamicRemarkOptions.includes(rating.remark) && rating.remark !== 'Other') ? (
+            {customRemarkMode[pId] || (rating.remark && !dynamicRemarkOptions.includes(rating.remark) && rating.remark !== 'Other' && rating.remark !== 'Rectified' && rating.remark !== 'Not Rectified') ? (
               <div className="flex items-center gap-2">
                 <input
                   type="text"
                   autoFocus
                   value={rating.remark === 'Other' ? '' : rating.remark}
-                  onChange={(e) => setRating(param._id, 'remark', e.target.value)}
+                  onChange={(e) => setRating(pId, 'remark', e.target.value)}
                   placeholder="Enter custom remark..."
                   className="w-full px-3 py-1.5 md:min-h-[38px] bg-white border border-[#5cb85c] rounded-md text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#5cb85c]/20 shadow-sm"
                 />
                 <button
                   onClick={() => {
-                    setRating(param._id, 'remark', '');
-                    setCustomRemarkMode(prev => ({ ...prev, [param._id]: false }));
+                    setRating(pId, 'remark', '');
+                    setCustomRemarkMode(prev => ({ ...prev, [pId]: false }));
                   }}
                   className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors"
                   title="Cancel custom remark"
@@ -356,18 +372,18 @@ const InspectorApp = () => {
                 value={rating.remark}
                 onChange={(val) => {
                   if (val === 'Other') {
-                    setCustomRemarkMode(prev => ({ ...prev, [param._id]: true }));
-                    setRating(param._id, 'remark', '');
+                    setCustomRemarkMode(prev => ({ ...prev, [pId]: true }));
+                    setRating(pId, 'remark', '');
                   } else {
-                    setRating(param._id, 'remark', val);
+                    setRating(pId, 'remark', val);
                     if (val && val.toLowerCase() === 'rectified') {
-                      setRating(param._id, 'score', '10');
+                      setRating(pId, 'score', '10');
                     } else if (val && val.toLowerCase() === 'not rectified') {
-                      setRating(param._id, 'score', '5');
+                      setRating(pId, 'score', '5');
                     } else {
                       const resolvedScore = resolveRemarkRating('', val);
                       if (resolvedScore !== null) {
-                        setRating(param._id, 'score', resolvedScore);
+                        setRating(pId, 'score', resolvedScore);
                       }
                     }
                   }
@@ -538,7 +554,20 @@ const InspectorApp = () => {
           </h2>
 
           <div className="flex flex-col gap-6 w-full mb-0">
-            {currentTask.assetType === 'Roadway' ? (
+            {currentTask.category === 'Roadway' ? (
+              ['Pavement', 'Shoulder', 'Kerb', 'Pavement Markings'].map(group => {
+                const groupParams = (currentTask.ratings || []).filter(p => p.group === group);
+                if (groupParams.length === 0) return null;
+                return (
+                  <div key={group} className="flex flex-col w-full">
+                    <h3 className="text-md font-bold text-gray-700 mb-3 pb-1 border-b-2 border-gray-200">{group}</h3>
+                    <div className="flex flex-col xl:flex-row gap-6 w-full flex-wrap">
+                       {groupParams.map(param => renderParamCard(param))}
+                    </div>
+                  </div>
+                );
+              })
+            ) : currentTask.assetType === 'Roadway' ? (
               ['Kerb', 'Shoulder', 'Pavement'].map(group => {
                 const groupParams = (currentTask.parameters || []).filter(p => p.assetType === group);
                 if (groupParams.length === 0) return null;
@@ -557,7 +586,13 @@ const InspectorApp = () => {
               </div>
             )}
 
-            {(!currentTask.parameters || currentTask.parameters.length === 0) && (
+            {currentTask.category !== 'Roadway' && (!currentTask.parameters || currentTask.parameters.length === 0) && (
+              <div className="flex-1 flex items-center justify-center py-12 text-gray-400 border border-dashed border-gray-300 rounded-lg">
+                No rating parameters found for this task.
+              </div>
+            )}
+            
+            {currentTask.category === 'Roadway' && (!currentTask.ratings || currentTask.ratings.length === 0) && (
               <div className="flex-1 flex items-center justify-center py-12 text-gray-400 border border-dashed border-gray-300 rounded-lg">
                 No rating parameters found for this task.
               </div>

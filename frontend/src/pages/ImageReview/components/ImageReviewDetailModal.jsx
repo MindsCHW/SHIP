@@ -153,7 +153,7 @@ const ImageReviewDetailModal = ({ batch, onClose }) => {
                       ) : task.status === 'EXTRACTION_FAILED' ? (
                         <span className="px-2 py-1 bg-red-500 text-white text-xs font-medium rounded shadow-sm">Failed</span>
                       ) : (
-                        <span className="px-2 py-1 bg-blue-500 text-white text-xs font-medium rounded shadow-sm">Pending</span>
+                        <span className="px-2 py-1 bg-blue-500 text-white text-xs font-medium rounded shadow-sm">Pending Review</span>
                       )}
                     </div>
 
@@ -178,7 +178,7 @@ const ImageReviewDetailModal = ({ batch, onClose }) => {
                   <div className="p-4 flex-1 flex flex-col text-sm">
                     <div className="grid grid-cols-2 gap-y-2 gap-x-4 mb-4">
                       <div><span className="text-gray-500">Chainage:</span> <strong className="text-gray-900">{task.chainage}</strong></div>
-                      <div><span className="text-gray-500">Params:</span> <strong className="text-gray-900">{task.parameters?.length || 0}</strong></div>
+                      <div><span className="text-gray-500">Params:</span> <strong className="text-gray-900">{task.parameters?.length || task.ratings?.length || 0}</strong></div>
                       <div><span className="text-gray-500">Road Type:</span> <strong className="text-gray-900">{task.roadType || '-'}</strong></div>
                       <div>
                         <span className="text-gray-500">Img Req:</span>{' '}
@@ -187,12 +187,19 @@ const ImageReviewDetailModal = ({ batch, onClose }) => {
                         </strong>
                       </div>
                       <div className="col-span-2 text-xs text-gray-500 truncate">
-                        {task.metadata?.extractedAt || 'Unknown Timestamp'}
+                        {task.extractionDiagnostics?.calculatedTimestamp || task.metadata?.extractedAt || 'Unknown Timestamp'}
                       </div>
-                      {task.status === 'EXTRACTION_FAILED' && task.extractionDiagnostics?.failureReason && (
-                        <div className="col-span-2 mt-2 p-2 bg-red-50 text-red-600 rounded text-xs border border-red-100 whitespace-pre-wrap break-words">
-                          <span className="font-semibold block mb-1">Failure Reason:</span>
-                          {task.extractionDiagnostics.failureReason}
+                      {task.status === 'EXTRACTION_FAILED' && (
+                        <div className="col-span-2 mt-2 p-3 bg-red-50 text-red-700 rounded text-xs border border-red-100">
+                          <div className="font-semibold mb-2">Extraction Diagnostic</div>
+                          <div className="grid grid-cols-1 gap-1 mb-2 text-[11px] opacity-90">
+                            <div><span className="font-medium">Project:</span> {task.project}</div>
+                            {task.extractionDiagnostics?.videoFilename && <div><span className="font-medium">Video:</span> {task.extractionDiagnostics.videoFilename}</div>}
+                          </div>
+                          <div className="whitespace-pre-wrap break-words bg-white/50 p-2 rounded border border-red-200">
+                            <span className="font-semibold block mb-1 text-red-800">Failure Reason:</span>
+                            {task.extractionDiagnostics?.failureReason || 'Unknown error occurred during processing'}
+                          </div>
                         </div>
                       )}
                     </div>

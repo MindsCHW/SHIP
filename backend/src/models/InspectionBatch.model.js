@@ -29,7 +29,7 @@ const inspectionBatchSchema = new mongoose.Schema(
     },
     samplingStrategy: {
       type: String,
-      enum: ['RANDOM', 'STRATIFIED', 'CUSTOM'],
+      enum: ['RANDOM', 'STRATIFIED', 'CUSTOM', 'CONTINUOUS'],
       default: 'RANDOM'
     },
     totalMasterQuestions: {

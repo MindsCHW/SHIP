@@ -15,6 +15,16 @@ const inspectionTaskSchema = new mongoose.Schema(
       required: true,
       index: true
     },
+    category: {
+      type: String,
+      trim: true,
+      index: true
+    },
+    direction: {
+      type: String,
+      trim: true,
+      index: true
+    },
     assetType: {
       type: String,
       index: true
@@ -42,6 +52,10 @@ const inspectionTaskSchema = new mongoose.Schema(
         trim: true
       },
       parameterName: {
+        type: String,
+        trim: true
+      },
+      group: {
         type: String,
         trim: true
       },

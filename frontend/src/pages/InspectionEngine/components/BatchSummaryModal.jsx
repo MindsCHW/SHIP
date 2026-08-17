@@ -68,9 +68,17 @@ const BatchSummaryModal = ({ batchId, onClose }) => {
                   else if (task.imageRequirement === 'NIGHT') nightTasksCount++;
                   else if (task.imageRequirement === 'BOTH') bothTasksCount++;
 
-                  if (task.parameters) {
+                  if (task.parameters && task.parameters.length > 0) {
                     task.parameters.forEach(p => {
                       if (p.imageRequirement === 'NIGHT') {
+                        nightQuestionsCount++;
+                      } else {
+                        dayQuestionsCount++;
+                      }
+                    });
+                  } else if (task.ratings && task.ratings.length > 0) {
+                    task.ratings.forEach(p => {
+                      if (task.imageRequirement === 'NIGHT') {
                         nightQuestionsCount++;
                       } else {
                         dayQuestionsCount++;
@@ -132,14 +140,15 @@ const BatchSummaryModal = ({ batchId, onClose }) => {
                           <th className="px-4 py-3 font-medium">Image Req</th>
                           <th className="px-4 py-3 font-medium">Questions</th>
                           <th className="px-4 py-3 font-medium">Status</th>
+                          <th className="px-4 py-3 font-medium max-w-[200px]">Extraction Notes</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-gray-100">
                         {batch.tasks?.slice(0, 50).map(task => (
                           <tr key={task._id}>
                             <td className="px-4 py-2 font-medium">{task.chainage}</td>
-                            <td className="px-4 py-2 text-gray-600">{task.parameters?.[0]?.category || 'N/A'}</td>
-                            <td className="px-4 py-2 text-gray-600">{task.parameters?.[0]?.assetType || 'N/A'}</td>
+                            <td className="px-4 py-2 text-gray-600">{task.parameters?.[0]?.category || 'Roadway'}</td>
+                            <td className="px-4 py-2 text-gray-600">{task.parameters?.[0]?.assetType || task.assetType || 'N/A'}</td>
                             <td className="px-4 py-2">
                               {task.imageRequirement === 'BOTH' ? (
                                 <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-purple-100 text-purple-700">
@@ -151,16 +160,19 @@ const BatchSummaryModal = ({ batchId, onClose }) => {
                                 </span>
                               )}
                             </td>
-                            <td className="px-4 py-2 text-gray-600 font-bold">{task.parameters?.length || 0} Params</td>
+                            <td className="px-4 py-2 text-gray-600 font-bold">{task.parameters?.length || task.ratings?.length || 0} Params</td>
                             <td className="px-4 py-2">
-                              <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-yellow-100 text-yellow-700">
+                              <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${task.status === 'EXTRACTION_FAILED' ? 'bg-red-100 text-red-700' : task.status === 'READY_FOR_REVIEW' ? 'bg-blue-100 text-blue-700' : 'bg-yellow-100 text-yellow-700'}`}>
                                 {task.status}
                               </span>
+                            </td>
+                            <td className="px-4 py-2 text-xs text-red-500 max-w-[200px] truncate" title={task.extractionDiagnostics?.failureReason}>
+                              {task.extractionDiagnostics?.failureReason || '-'}
                             </td>
                           </tr>
                         ))}
                         {batch.tasks?.length === 0 && (
-                          <tr><td colSpan="6" className="text-center py-4 text-gray-500">No tasks generated.</td></tr>
+                          <tr><td colSpan="7" className="text-center py-4 text-gray-500">No tasks generated.</td></tr>
                         )}
                       </tbody>
                     </table>
