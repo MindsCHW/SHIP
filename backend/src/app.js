@@ -32,6 +32,7 @@ const surveyLibraryRoutes = require('./modules/survey-library/routes/surveyLibra
 const imageReviewRoutes = require('./modules/image-review/routes/imageReview.routes');
 const workAssignmentRoutes = require('./modules/work-assignment/workAssignment.routes');
 const shipRoutes = require('./modules/ship/ship.routes');
+const reportRoutes = require('./modules/reports/report.routes');
 
 // ─── Due-date reminder cron (runs every hour) ─────────────────────────────────
 const { sendDueDateReminders, markOverdueAssignments } = require('./modules/work-assignment/workAssignment.service');
@@ -122,14 +123,18 @@ const createApp = () => {
   app.use('/api/v1/auth', authLimiter, authRoutes);
   app.use('/api/v1/users', apiLimiter, userRoutes);
   app.use('/api/v1/projects', apiLimiter, projectRoutes);
-  app.use('/api/v1/master', apiLimiter, masterListRoutes);
-  app.use('/api/v1/survey', apiLimiter, surveyRoutes);
-  app.use('/api/v1/inspections', apiLimiter, inspectionRoutes);
+  app.use('/api/v1/master-list', apiLimiter, masterListRoutes);
+  app.use('/api/v1/ship', apiLimiter, shipRoutes);
+  app.use('/api/v1/reports', apiLimiter, reportRoutes);
+
+
   app.use('/api/v1/dashboard', apiLimiter, dashboardRoutes);
   app.use('/api/v1/analytics', apiLimiter, analyticsRoutes);
   app.use('/api/v1/ratings', apiLimiter, ratingsRoutes);
   app.use('/api/v1/audit', apiLimiter, auditRoutes);
   app.use('/api/v1/notifications', apiLimiter, notificationRoutes);
+  app.use('/api/v1/survey', apiLimiter, surveyRoutes);
+  app.use('/api/v1/inspections', apiLimiter, inspectionRoutes);
   app.use('/api/v1/inspection-engine', apiLimiter, inspectionEngineRoutes);
   app.use('/api/v1/survey-library', apiLimiter, surveyLibraryRoutes);
   app.use('/api/v1/survey-processing', apiLimiter, surveyProcessingRoutes);

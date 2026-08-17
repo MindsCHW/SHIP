@@ -6,10 +6,28 @@ const healthEngine = require('../analytics/health.engine');
 
 class ProjectAnalyticsService {
   async getProjectIntelligence() {
-    const projects = await projectRepo.getActiveProjects();
     const batches = await inspectionRepo.findBatches({});
     const tasks = await inspectionRepo.findTasks({});
     const inspections = await inspectionRepo.findInspections({});
+
+    // Fetch dynamic project strings from batches and inspections
+    const projectCodes = new Set();
+    batches.forEach(b => { if(b.project) projectCodes.add(b.project) });
+    inspections.forEach(i => { if(i.projectId) projectCodes.add(i.projectId) });
+    
+    // Attempt to map back to Project collection for friendly names if they exist
+    const dbProjects = await projectRepo.getAllProjects();
+    const projectMap = new Map();
+    dbProjects.forEach(p => projectMap.set(p.code, p));
+
+    const projects = Array.from(projectCodes).map(code => {
+      const dbProj = projectMap.get(code);
+      return {
+        _id: dbProj ? dbProj._id : code,
+        name: dbProj ? (dbProj.fullName || dbProj.name) : code,
+        code: code
+      };
+    });
 
     const intelligenceList = projects.map(p => {
       const code = p.code || p.name;
