@@ -273,10 +273,12 @@ const saveTaskRatings = async (taskId, ratingsData, selectedImageUrl, user) => {
   }
   
   if (task.category === 'Roadway') {
-    const ratedGroups = new Set((task.ratings || []).map(r => r.group));
+    const ratedRoadwayGroups = new Set((task.ratings || []).filter(r => r.group).map(r => r.group));
     const skippedGroups = new Set((task.skippedAssetTypes || []).map(s => s.assetType));
-    const handledGroups = new Set([...ratedGroups, ...skippedGroups]);
-    if (handledGroups.size >= 4) {
+    const requiredRoadwayGroups = ['Pavement', 'Shoulder', 'Kerb', 'Pavement Markings'];
+    const isRoadwayCompleted = requiredRoadwayGroups.every(g => ratedRoadwayGroups.has(g) || skippedGroups.has(g));
+    
+    if (isRoadwayCompleted) {
       task.status = 'COMPLETED';
     } else {
       task.status = 'IN_PROGRESS';
@@ -363,6 +365,9 @@ const exportRatingsCSV = async (projectId, batchId) => {
           category = param ? param.category : '-';
           paramText = param ? param.parameter : '-';
           direction = param && param.direction ? param.direction : '-';
+          if (param && param.assetType) {
+            aType = param.assetSubType ? `${param.assetType} (${param.assetSubType})` : param.assetType;
+          }
         } else if (rating.parameterKey) {
           category = task.category || 'Roadway';
           // Correctly map Roadway group to Asset Type
@@ -456,8 +461,8 @@ const skipTask = async (taskId, skipData, user) => {
     throw Object.assign(new Error('Remarks are required when skip reason is "Other"'), { statusCode: 400 });
   }
 
-  if (skipData.assetType && task.category === 'Roadway') {
-    // Asset-level skip for Roadway
+  if (skipData.assetType) {
+    // Asset-level skip
     if (!task.skippedAssetTypes) task.skippedAssetTypes = [];
     
     // Remove if already exists to update
@@ -471,16 +476,24 @@ const skipTask = async (taskId, skipData, user) => {
       skippedAt: new Date()
     });
 
-    // Check if task is COMPLETED. A Roadway task is COMPLETED when all 4 asset types are RATED or SKIPPED
-    const ratedGroups = new Set((task.ratings || []).map(r => r.group));
-    const skippedGroups = new Set(task.skippedAssetTypes.map(s => s.assetType));
-    
-    // Total unique handled groups
-    const handledGroups = new Set([...ratedGroups, ...skippedGroups]);
-    if (handledGroups.size >= 4) {
-      task.status = 'COMPLETED';
+    if (task.category === 'Roadway') {
+      const ratedRoadwayGroups = new Set((task.ratings || []).filter(r => r.group).map(r => r.group));
+      const skippedGroups = new Set(task.skippedAssetTypes.map(s => s.assetType));
+      const requiredRoadwayGroups = ['Pavement', 'Shoulder', 'Kerb', 'Pavement Markings'];
+      const isRoadwayCompleted = requiredRoadwayGroups.every(g => ratedRoadwayGroups.has(g) || skippedGroups.has(g));
+      
+      if (isRoadwayCompleted) {
+        task.status = 'COMPLETED';
+      } else {
+        task.status = 'IN_PROGRESS';
+      }
     } else {
-      task.status = 'IN_PROGRESS';
+      const totalAssetTypes = new Set((task.parameters || []).map(p => p.assetType)).size;
+      if (task.skippedAssetTypes.length >= totalAssetTypes) {
+        task.status = 'SKIPPED';
+      } else {
+        task.status = 'IN_PROGRESS';
+      }
     }
   } else {
     // Legacy / Full task skip

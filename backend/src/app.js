@@ -119,7 +119,7 @@ const createApp = () => {
   app.use('/api/v1/auth', authLimiter, authRoutes);
   app.use('/api/v1/users', apiLimiter, userRoutes);
   app.use('/api/v1/projects', apiLimiter, projectRoutes);
-  app.use('/api/v1/master-list', apiLimiter, masterListRoutes);
+  app.use('/api/v1/master', apiLimiter, masterListRoutes);
   app.use('/api/v1/ship', apiLimiter, shipRoutes);
   app.use('/api/v1/reports', apiLimiter, reportRoutes);
 
