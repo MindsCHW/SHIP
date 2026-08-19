@@ -115,9 +115,24 @@ class ShipAnalytics {
       const assets = new Set();
       
       inspections.forEach(insp => {
-        if (insp.assetType) assets.add(insp.assetType);
+        if (insp.category) categories.add(insp.category);
+        const isRoadway = insp.category === 'Roadway' || insp.assetType === 'Roadway';
+        
+        if (!isRoadway) {
+          if (insp.assetType) assets.add(insp.assetType);
+        } else {
+          // For Roadway, the actual asset types are in ratings or skips
+          if (insp.skippedAssetTypes && insp.skippedAssetTypes.length > 0) {
+            insp.skippedAssetTypes.forEach(skip => {
+              if (skip.assetType) assets.add(skip.assetType);
+            });
+          }
+        }
         
         insp.ratings?.forEach(rating => {
+          if (isRoadway && rating.group) {
+            assets.add(rating.group);
+          }
           const val = rating.score || 0;
           if (val > 0) {
             sumRatings += val;
@@ -163,29 +178,79 @@ class ShipAnalytics {
     const assetBreakdown = {};
     
     inspections.forEach(insp => {
-      // Since InspectionTask doesn't have category directly, group by assetType
-      const catKey = insp.assetType || 'Uncategorized';
-      if (!categoryBreakdown[catKey]) {
-        categoryBreakdown[catKey] = { count: 0, ratingSum: 0, ratingCount: 0 };
-      }
-      categoryBreakdown[catKey].count++;
+      const isRoadway = insp.category === 'Roadway' || insp.assetType === 'Roadway';
       
-      const assetKey = insp.assetSubType || insp.assetType || 'Other';
-      if (!assetBreakdown[assetKey]) {
-        assetBreakdown[assetKey] = { count: 0, ratingSum: 0, ratingCount: 0 };
-      }
-      assetBreakdown[assetKey].count++;
-      
-      insp.ratings?.forEach(rating => {
-        const val = rating.score || 0;
-        if (val > 0) {
-          categoryBreakdown[catKey].ratingSum += val;
-          categoryBreakdown[catKey].ratingCount++;
-          
-          assetBreakdown[assetKey].ratingSum += val;
-          assetBreakdown[assetKey].ratingCount++;
+      if (!isRoadway) {
+        // Standard asset processing
+        const catKey = insp.category || insp.assetType || 'Uncategorized';
+        if (!categoryBreakdown[catKey]) {
+          categoryBreakdown[catKey] = { count: 0, ratingSum: 0, ratingCount: 0 };
         }
-      });
+        categoryBreakdown[catKey].count++;
+        
+        const assetKey = insp.assetSubType || insp.assetType || 'Other';
+        if (!assetBreakdown[assetKey]) {
+          assetBreakdown[assetKey] = { count: 0, ratingSum: 0, ratingCount: 0 };
+        }
+        assetBreakdown[assetKey].count++;
+        
+        insp.ratings?.forEach(rating => {
+          const val = rating.score || 0;
+          if (val > 0) {
+            categoryBreakdown[catKey].ratingSum += val;
+            categoryBreakdown[catKey].ratingCount++;
+            
+            assetBreakdown[assetKey].ratingSum += val;
+            assetBreakdown[assetKey].ratingCount++;
+          }
+        });
+      } else {
+        // Roadway specific processing based on rating.group
+        const catKey = 'Roadway';
+        if (!categoryBreakdown[catKey]) {
+          categoryBreakdown[catKey] = { count: 0, ratingSum: 0, ratingCount: 0 };
+        }
+        categoryBreakdown[catKey].count++;
+        
+        // Ensure skipped assets are counted in breakdown count (for coverage analysis)
+        if (insp.skippedAssetTypes && insp.skippedAssetTypes.length > 0) {
+          insp.skippedAssetTypes.forEach(skip => {
+            const assetKey = skip.assetType || 'Other';
+            if (!assetBreakdown[assetKey]) {
+              assetBreakdown[assetKey] = { count: 0, ratingSum: 0, ratingCount: 0 };
+            }
+            assetBreakdown[assetKey].count++;
+          });
+        }
+        
+        insp.ratings?.forEach(rating => {
+          const assetKey = rating.group || 'Other';
+          if (!assetBreakdown[assetKey]) {
+            assetBreakdown[assetKey] = { count: 0, ratingSum: 0, ratingCount: 0 };
+          }
+          // We increment count per rating.group found? 
+          // Actually, we should only increment count once per unique group per inspection.
+          // Let's do that below by tracking seen groups.
+        });
+        
+        const seenGroups = new Set();
+        insp.ratings?.forEach(rating => {
+          const assetKey = rating.group || 'Other';
+          if (!seenGroups.has(assetKey)) {
+             assetBreakdown[assetKey].count++;
+             seenGroups.add(assetKey);
+          }
+          
+          const val = rating.score || 0;
+          if (val > 0) {
+            categoryBreakdown[catKey].ratingSum += val;
+            categoryBreakdown[catKey].ratingCount++;
+            
+            assetBreakdown[assetKey].ratingSum += val;
+            assetBreakdown[assetKey].ratingCount++;
+          }
+        });
+      }
     });
     
     const formatBreakdown = (obj) => Object.keys(obj).map(key => ({

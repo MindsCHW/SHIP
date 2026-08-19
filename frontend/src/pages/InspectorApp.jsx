@@ -61,6 +61,7 @@ const InspectorApp = () => {
   const [skipModalOpen, setSkipModalOpen] = useState(false);
   const [skipReason, setSkipReason] = useState('');
   const [skipRemarks, setSkipRemarks] = useState('');
+  const [skipGroup, setSkipGroup] = useState(null); // Tracks which Asset Type is being skipped for Roadway
   const [skipping, setSkipping] = useState(false);
   const [remarkMasterConfig, setRemarkMasterConfig] = useState({});
 
@@ -147,13 +148,16 @@ const InspectorApp = () => {
       setSaving(true);
       let ratingsPayload = [];
       if (currentTask.category === 'Roadway') {
-        ratingsPayload = (currentTask.ratings || []).map(p => ({
-          parameterKey: p.parameterKey,
-          parameterName: p.parameterName,
-          group: p.group,
-          score: Number(taskRatings[p.parameterKey]?.score ?? 10),
-          remark: taskRatings[p.parameterKey]?.remark || ''
-        }));
+        const skippedGroups = new Set((currentTask.skippedAssetTypes || []).map(s => s.assetType));
+        ratingsPayload = (currentTask.ratings || [])
+          .filter(p => !skippedGroups.has(p.group))
+          .map(p => ({
+            parameterKey: p.parameterKey,
+            parameterName: p.parameterName,
+            group: p.group,
+            score: Number(taskRatings[p.parameterKey]?.score ?? 10),
+            remark: taskRatings[p.parameterKey]?.remark || ''
+          }));
       } else {
         ratingsPayload = (currentTask.parameters || []).map(p => ({
           masterListId: p._id,
@@ -218,24 +222,37 @@ const InspectorApp = () => {
 
     try {
       setSkipping(true);
-      await ratingService.skipTask(currentTask._id, skipReason, skipRemarks);
+      const payload = {
+        category: currentTask.category,
+        assetType: currentTask.category === 'Roadway' && skipGroup ? skipGroup : currentTask.assetType,
+        skipReason: skipReason,
+        remarks: skipRemarks
+      };
+      
+      const updatedTaskResponse = await ratingService.skipTask(currentTask._id, payload);
+      const returnedTask = updatedTaskResponse.data || updatedTaskResponse;
+      
       setTasks(prev => {
         const updated = [...prev];
-        updated[currentIndex] = { ...updated[currentIndex], status: 'SKIPPED' };
+        updated[currentIndex] = { ...updated[currentIndex], status: returnedTask.status, skippedAssetTypes: returnedTask.skippedAssetTypes };
         return updated;
       });
       
       setSkipModalOpen(false);
       setSkipReason('');
       setSkipRemarks('');
+      setSkipGroup(null);
       
-      if (currentIndex < tasks.length - 1) {
-        setCurrentIndex(prev => prev + 1);
-        setActiveImageIndex(1);
-        setExpandedCard(null);
-      } else {
-        alert('All tasks completed! Great job.');
-        navigate('/rating');
+      // If task is fully skipped or completed, move to next
+      if (returnedTask.status === 'SKIPPED' || returnedTask.status === 'COMPLETED') {
+        if (currentIndex < tasks.length - 1) {
+          setCurrentIndex(prev => prev + 1);
+          setActiveImageIndex(1);
+          setExpandedCard(null);
+        } else {
+          alert('All tasks completed! Great job.');
+          navigate('/rating');
+        }
       }
     } catch (err) {
       console.error(err);
@@ -558,9 +575,23 @@ const InspectorApp = () => {
               ['Pavement', 'Shoulder', 'Kerb', 'Pavement Markings'].map(group => {
                 const groupParams = (currentTask.ratings || []).filter(p => p.group === group);
                 if (groupParams.length === 0) return null;
+                const isSkipped = (currentTask.skippedAssetTypes || []).some(s => s.assetType === group);
                 return (
-                  <div key={group} className="flex flex-col w-full">
-                    <h3 className="text-md font-bold text-gray-700 mb-3 pb-1 border-b-2 border-gray-200">{group}</h3>
+                  <div key={group} className={`flex flex-col w-full ${isSkipped ? 'opacity-50 pointer-events-none' : ''}`}>
+                    <div className="flex items-center justify-between mb-3 pb-1 border-b-2 border-gray-200">
+                      <h3 className="text-md font-bold text-gray-700">{group} {isSkipped && '(SKIPPED)'}</h3>
+                      {!isSkipped && (
+                        <button
+                          onClick={() => {
+                            setSkipGroup(group);
+                            setSkipModalOpen(true);
+                          }}
+                          className="px-3 py-1 text-xs font-medium text-red-600 border border-red-200 bg-red-50 hover:bg-red-100 rounded-md transition-colors"
+                        >
+                          Skip Asset
+                        </button>
+                      )}
+                    </div>
                     <div className="flex flex-col xl:flex-row gap-6 w-full flex-wrap">
                        {groupParams.map(param => renderParamCard(param))}
                     </div>
@@ -638,12 +669,13 @@ const InspectorApp = () => {
                   className="bg-white rounded-xl shadow-2xl max-w-md w-full overflow-hidden"
                 >
                   <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
-                    <h3 className="text-lg font-semibold text-gray-900">Skip Question</h3>
+                    <h3 className="text-lg font-semibold text-gray-900">Skip {skipGroup ? skipGroup : 'Question'}</h3>
                     <button
                       onClick={() => {
                         setSkipModalOpen(false);
                         setSkipReason('');
                         setSkipRemarks('');
+                        setSkipGroup(null);
                       }}
                       className="text-gray-400 hover:text-gray-600 p-1 rounded-full hover:bg-gray-100 transition-colors"
                     >
@@ -696,6 +728,7 @@ const InspectorApp = () => {
                         setSkipModalOpen(false);
                         setSkipReason('');
                         setSkipRemarks('');
+                        setSkipGroup(null);
                       }}
                       className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none transition-colors"
                     >

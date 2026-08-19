@@ -43,20 +43,36 @@ class TemporalAnalyticsService {
 
       // Fetch all tasks for this batch
       const tasks = await InspectionTask.find({ batchId: batch._id, status: { $in: ['COMPLETED', 'READY_FOR_RATING', 'SKIPPED'] } })
-        .populate('parameters')
         .lean();
 
-      let totalRatings = 0;
       let sumRatings = 0;
+      let totalRatings = 0;
       let criticalIssues = 0;
       let skipCount = 0;
+      let totalAssetsCount = 0;
+
       const catSums = {};
       const catCounts = {};
       const currentCriticals = [];
 
       tasks.forEach(t => {
-        if (t.status === 'SKIPPED') {
-          skipCount++;
+        const isRoadway = t.category === 'Roadway' || t.assetType === 'Roadway';
+        
+        if (isRoadway) {
+          totalAssetsCount += 4;
+          if (t.status === 'SKIPPED') {
+            skipCount += 4;
+          } else if (t.skippedAssetTypes && t.skippedAssetTypes.length > 0) {
+            skipCount += t.skippedAssetTypes.length;
+          }
+        } else {
+          totalAssetsCount += 1;
+          if (t.status === 'SKIPPED') {
+            skipCount += 1;
+          }
+        }
+
+        if (t.status === 'SKIPPED' && !isRoadway) {
           return;
         }
 
@@ -82,7 +98,29 @@ class TemporalAnalyticsService {
         const taskAvg = taskCount > 0 ? (taskSum / taskCount) : 10;
 
         // Categories
-        if (t.assetType) {
+        const effectiveAssetType = (isRoadway && t.ratings && t.ratings[0]?.group) ? t.ratings[0].group : t.assetType;
+        if (isRoadway && t.ratings) {
+           t.ratings.forEach(r => {
+             const assetGroup = r.group;
+             if (assetGroup) {
+               if (!catSums[assetGroup]) { catSums[assetGroup] = 0; catCounts[assetGroup] = 0; }
+               catSums[assetGroup] += (r.score || 10);
+               catCounts[assetGroup] += 1;
+               const assetKey = `${t.chainage}_${assetGroup}`;
+               if (!assetHistories[assetKey]) assetHistories[assetKey] = [];
+               assetHistories[assetKey].push({ month: monthLabel, rating: r.score || 10, isCritical: (r.score <= 4) });
+               
+               if (t.chainage) {
+                 if (!chainageHistories[t.chainage]) chainageHistories[t.chainage] = [];
+                 chainageHistories[t.chainage].push({ month: monthLabel, taskAvg: r.score || 10, isCritical: (r.score <= 4), assetType: assetGroup });
+               }
+               
+               if (r.score <= 4) {
+                 currentCriticals.push(`${t.chainage}_${assetGroup}`);
+               }
+             }
+           });
+        } else if (t.assetType) {
           if (!catSums[t.assetType]) { catSums[t.assetType] = 0; catCounts[t.assetType] = 0; }
           catSums[t.assetType] += taskSum;
           catCounts[t.assetType] += taskCount;
@@ -91,21 +129,21 @@ class TemporalAnalyticsService {
           const assetKey = `${t.chainage}_${t.assetType}`;
           if (!assetHistories[assetKey]) assetHistories[assetKey] = [];
           assetHistories[assetKey].push({ month: monthLabel, rating: taskAvg, isCritical });
-        }
 
-        // Chainage History
-        if (t.chainage) {
-          if (!chainageHistories[t.chainage]) chainageHistories[t.chainage] = [];
-          chainageHistories[t.chainage].push({ month: monthLabel, taskAvg, isCritical, assetType: t.assetType });
-        }
+          // Chainage History
+          if (t.chainage) {
+            if (!chainageHistories[t.chainage]) chainageHistories[t.chainage] = [];
+            chainageHistories[t.chainage].push({ month: monthLabel, taskAvg, isCritical, assetType: t.assetType });
+          }
 
-        if (isCritical) {
-          currentCriticals.push(`${t.chainage}_${t.assetType}`);
+          if (isCritical) {
+            currentCriticals.push(`${t.chainage}_${t.assetType}`);
+          }
         }
       });
 
       const overallAvg = totalRatings > 0 ? (sumRatings / totalRatings).toFixed(1) : 10;
-      const skipPerc = tasks.length > 0 ? ((skipCount / tasks.length) * 100).toFixed(1) : 0;
+      const skipPerc = totalAssetsCount > 0 ? ((skipCount / totalAssetsCount) * 100).toFixed(1) : 0;
       
       // Rectification Logic: How many of prevCriticals are NOT in currentCriticals?
       let rectifiedInThisBatch = 0;

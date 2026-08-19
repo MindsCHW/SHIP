@@ -20,6 +20,7 @@ const RoadSummaryPage = () => {
   const [minChainage, setMinChainage] = useState('');
   const [maxChainage, setMaxChainage] = useState('');
   const [concernedItems, setConcernedItems] = useState(false);
+  const [goToPageInput, setGoToPageInput] = useState('');
   
   const [appliedFilters, setAppliedFilters] = useState({
     category: 'Roadway',
@@ -180,6 +181,17 @@ const RoadSummaryPage = () => {
     });
     setCurrentPage(1);
   };
+
+  const handleGoToPage = (e) => {
+    e.preventDefault();
+    const pageNum = parseInt(goToPageInput, 10);
+    if (!isNaN(pageNum) && pageNum >= 1 && pageNum <= totalPages) {
+      setCurrentPage(pageNum);
+      setGoToPageInput('');
+    } else if (goToPageInput.trim() !== '') {
+      alert(`Please enter a valid page number between 1 and ${totalPages}`);
+    }
+  };
   
   const handleExportCSV = async () => {
     try {
@@ -230,7 +242,7 @@ const RoadSummaryPage = () => {
 
       <div className="p-6 flex flex-col flex-1 overflow-hidden">
         {/* Filters */}
-        <div className="grid grid-cols-6 gap-4 mb-6 shrink-0">
+        <div className="grid grid-cols-7 gap-4 mb-6 shrink-0">
           <div>
             <label className="block text-xs font-medium text-gray-700 mb-1">Category :</label>
             <CustomDropdown
@@ -286,6 +298,23 @@ const RoadSummaryPage = () => {
               onChange={setParamType}
               placeholder="Parameter Type"
             />
+          </div>
+          <div>
+            <label className="block text-[11px] font-medium text-gray-700 mb-1">Go to Page :</label>
+            <form onSubmit={handleGoToPage} className="flex gap-2">
+              <input 
+                type="number" 
+                min="1" 
+                max={totalPages}
+                value={goToPageInput} 
+                onChange={(e) => setGoToPageInput(e.target.value)} 
+                placeholder="Page #" 
+                className="w-full border border-[#5cb85c] rounded px-3 py-1.5 text-sm bg-white focus:outline-none focus:border-[#5cb85c] focus:ring-1 focus:ring-[#5cb85c]/50 transition-all" 
+              />
+              <button type="submit" className="bg-gray-100 border border-gray-300 hover:bg-gray-200 text-gray-700 font-medium py-1.5 px-3 rounded text-sm transition-colors">
+                Go
+              </button>
+            </form>
           </div>
         </div>
 

@@ -551,7 +551,13 @@ const getChartsData = async (projectId, batchId = null) => {
  * Skip Analytics
  */
 const getSkipAnalytics = async (projectId, batchId = null, filters = {}) => {
-  const matchFilter = { status: 'SKIPPED' };
+  const matchFilter = {
+    $or: [
+      { status: 'SKIPPED' },
+      { 'skippedAssetTypes.0': { $exists: true } }
+    ]
+  };
+
   const totalTasksFilter = { status: { $in: ['READY_FOR_RATING', 'IN_PROGRESS', 'COMPLETED', 'SKIPPED'] } };
 
   if (projectId) {
@@ -563,98 +569,143 @@ const getSkipAnalytics = async (projectId, batchId = null, filters = {}) => {
     totalTasksFilter.batchId = mongoose.Types.ObjectId(batchId);
   }
   
-  if (filters.reason) matchFilter['skipMetadata.reason'] = filters.reason;
-  if (filters.inspector) {
-    matchFilter['skipMetadata.skippedBy'] = mongoose.Types.ObjectId(filters.inspector);
-    totalTasksFilter['skipMetadata.skippedBy'] = mongoose.Types.ObjectId(filters.inspector); // Note: total tasks might not have skippedBy, wait, total tasks by inspector might not be accurate unless we check assignedTo or ratedBy. Let's omit inspector from totalTasksFilter for now, or just calculate total skips for this inspector.
-  }
-  if (filters.assetType) {
-    matchFilter.assetType = filters.assetType;
-    totalTasksFilter.assetType = filters.assetType;
-  }
   if (filters.startDate && filters.endDate) {
     matchFilter.updatedAt = { $gte: new Date(filters.startDate), $lte: new Date(filters.endDate) };
     totalTasksFilter.updatedAt = { $gte: new Date(filters.startDate), $lte: new Date(filters.endDate) };
   }
 
-  const [
-    totalSkipped,
-    totalTasks,
-    reasonDistribution,
-    inspectorCounts,
-    projectCounts,
-    recentSkips,
-    chainageHotspots
-  ] = await Promise.all([
-    InspectionTask.countDocuments(matchFilter),
-    InspectionTask.countDocuments(totalTasksFilter),
-    InspectionTask.aggregate([
-      { $match: matchFilter },
-      { $group: { _id: '$skipMetadata.reason', count: { $sum: 1 } } },
-      { $sort: { count: -1 } }
-    ]),
-    InspectionTask.aggregate([
-      { $match: matchFilter },
-      {
-        $lookup: {
-          from: 'users',
-          localField: 'skipMetadata.skippedBy',
-          foreignField: '_id',
-          as: 'inspector'
+  // Pre-filter for asset type if provided (this will be enforced again post-unwind)
+  if (filters.assetType) {
+    matchFilter.$or = [
+      { assetType: filters.assetType, status: 'SKIPPED' },
+      { 'skippedAssetTypes.assetType': filters.assetType }
+    ];
+    totalTasksFilter.assetType = filters.assetType; // approximate for total tasks
+  }
+
+  const pipeline = [
+    { $match: matchFilter },
+    {
+      $addFields: {
+        skips: {
+          $concatArrays: [
+            {
+              $cond: [
+                { $eq: ['$status', 'SKIPPED'] },
+                [{
+                  assetType: '$assetType',
+                  reason: '$skipMetadata.reason',
+                  remarks: '$skipMetadata.remarks',
+                  skippedBy: '$skipMetadata.skippedBy',
+                  skippedAt: { $ifNull: ['$skipMetadata.skippedAt', '$updatedAt'] },
+                  isLegacy: true
+                }],
+                []
+              ]
+            },
+            { $ifNull: ['$skippedAssetTypes', []] }
+          ]
         }
-      },
-      { $unwind: { path: '$inspector', preserveNullAndEmptyArrays: true } },
-      { 
-        $group: { 
-          _id: { 
-            id: '$skipMetadata.skippedBy', 
-            name: { $concat: ['$inspector.firstName', ' ', '$inspector.lastName'] } 
-          }, 
-          count: { $sum: 1 } 
-        } 
-      },
-      { $sort: { count: -1 } },
-      { $limit: 20 }
-    ]),
-    InspectionTask.aggregate([
-      { $match: matchFilter },
-      { $group: { _id: '$project', count: { $sum: 1 } } },
-      { $sort: { count: -1 } },
-      { $limit: 10 }
-    ]),
-    InspectionTask.find(matchFilter)
-      .sort({ updatedAt: -1 })
-      .limit(20)
-      .populate('skipMetadata.skippedBy', 'firstName lastName')
-      .select('project chainage skipMetadata image updatedAt assetType')
-      .lean(),
-    InspectionTask.aggregate([
-      { $match: matchFilter },
-      { $group: { _id: { chainage: '$chainage', project: '$project' }, count: { $sum: 1 } } },
-      { $limit: 100 }
-    ])
+      }
+    },
+    { $unwind: '$skips' }
+  ];
+
+  // Apply post-unwind filters
+  const postUnwindMatch = {};
+  if (filters.reason) postUnwindMatch['skips.reason'] = filters.reason;
+  if (filters.inspector) postUnwindMatch['skips.skippedBy'] = mongoose.Types.ObjectId(filters.inspector);
+  if (filters.assetType) postUnwindMatch['skips.assetType'] = filters.assetType;
+
+  if (Object.keys(postUnwindMatch).length > 0) {
+    pipeline.push({ $match: postUnwindMatch });
+  }
+
+  pipeline.push({
+    $facet: {
+      totalSkipped: [{ $count: 'count' }],
+      recentSkips: [
+        { $sort: { 'skips.skippedAt': -1, updatedAt: -1 } },
+        { $limit: 20 },
+        {
+          $lookup: {
+            from: 'users',
+            localField: 'skips.skippedBy',
+            foreignField: '_id',
+            as: 'inspector'
+          }
+        },
+        { $unwind: { path: '$inspector', preserveNullAndEmptyArrays: true } }
+      ],
+      reasonDistribution: [
+        { $group: { _id: '$skips.reason', count: { $sum: 1 } } },
+        { $sort: { count: -1 } }
+      ],
+      inspectorCounts: [
+        {
+          $lookup: {
+            from: 'users',
+            localField: 'skips.skippedBy',
+            foreignField: '_id',
+            as: 'inspector'
+          }
+        },
+        { $unwind: { path: '$inspector', preserveNullAndEmptyArrays: true } },
+        { 
+          $group: { 
+            _id: { 
+              id: '$skips.skippedBy', 
+              name: { $concat: ['$inspector.firstName', ' ', '$inspector.lastName'] } 
+            }, 
+            count: { $sum: 1 } 
+          } 
+        },
+        { $sort: { count: -1 } },
+        { $limit: 20 }
+      ],
+      projectCounts: [
+        { $group: { _id: '$project', count: { $sum: 1 } } },
+        { $sort: { count: -1 } },
+        { $limit: 10 }
+      ],
+      chainageHotspots: [
+        { $group: { _id: { chainage: '$chainage', project: '$project' }, count: { $sum: 1 } } },
+        { $sort: { count: -1 } },
+        { $limit: 100 }
+      ]
+    }
+  });
+
+  const [totalTasks, results] = await Promise.all([
+    InspectionTask.countDocuments(totalTasksFilter),
+    InspectionTask.aggregate(pipeline)
   ]);
 
+  const facet = results[0];
+  const totalSkipped = facet.totalSkipped[0]?.count || 0;
+  
+  // Total assets for Roadway logic in Dashboard skipRate is complex to do accurately with just countDocuments
+  // Assuming a rough estimate for total possible assets based on totalTasks:
   const skipRate = totalTasks > 0 ? ((totalSkipped / totalTasks) * 100).toFixed(2) : 0;
 
   return {
     totalSkipped,
     skipRate,
-    reasonDistribution: reasonDistribution.map(r => ({ reason: r._id || 'Unknown', count: r.count })),
-    inspectorCounts: inspectorCounts.map(i => ({ inspector: i._id.name || 'System / Unknown', count: i.count })),
-    projectCounts: projectCounts.map(p => ({ project: p._id || 'Unknown', count: p.count })),
-    recentSkips: recentSkips.map(s => ({
+    reasonDistribution: facet.reasonDistribution.map(r => ({ reason: r._id || 'Unknown', count: r.count })),
+    inspectorCounts: facet.inspectorCounts.map(i => ({ inspector: i._id.name || 'System / Unknown', count: i.count })),
+    projectCounts: facet.projectCounts.map(p => ({ project: p._id || 'Unknown', count: p.count })),
+    recentSkips: facet.recentSkips.map(s => ({
       _id: s._id,
       project: s.project,
       chainage: s.chainage,
-      assetType: s.assetType,
-      reason: s.skipMetadata?.reason || 'Unknown',
-      remarks: s.skipMetadata?.remarks || '',
-      inspector: s.skipMetadata?.skippedBy ? `${s.skipMetadata.skippedBy.firstName} ${s.skipMetadata.skippedBy.lastName}` : 'System',
-      timestamp: s.updatedAt,
+      assetType: s.skips.assetType || s.assetType,
+      reason: s.skips.reason || 'Unknown',
+      remarks: s.skips.remarks || '',
+      inspector: s.inspector ? `${s.inspector.firstName} ${s.inspector.lastName}` : 'System',
+      timestamp: s.skips.skippedAt || s.updatedAt,
       imageUrl: s.image?.cloudinaryUrl || null
     })),
-    chainageHotspots: chainageHotspots.map(h => ({
+    chainageHotspots: facet.chainageHotspots.map(h => ({
       x: parseFloat(h._id.chainage) || 0,
       y: h.count,
       project: h._id.project,
