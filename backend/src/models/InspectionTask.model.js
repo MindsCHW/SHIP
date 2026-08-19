@@ -130,7 +130,14 @@ const inspectionTaskSchema = new mongoose.Schema(
       remarks: String,
       skippedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
       skippedAt: Date
-    }
+    },
+    skippedAssetTypes: [{
+      assetType: { type: String, required: true },
+      reason: String,
+      remarks: String,
+      skippedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+      skippedAt: { type: Date, default: Date.now }
+    }]
   },
   {
     timestamps: true,

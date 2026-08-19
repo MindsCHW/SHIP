@@ -219,12 +219,29 @@ class DecisionAnalyticsService {
       status: { $in: ['COMPLETED', 'READY_FOR_RATING', 'SKIPPED'] }
     }).lean();
 
-    let totalRatings = 0, sumRatings = 0, criticalIssues = 0, skipCount = 0;
+    let totalRatings = 0, sumRatings = 0, criticalIssues = 0, skipCount = 0, totalAssetsCount = 0;
     const assetCriticalMap = {};
     const chainageCriticalMap = {};
 
     tasks.forEach(t => {
-      if (t.status === 'SKIPPED') { skipCount++; return; }
+      const isRoadway = t.category === 'Roadway' || t.assetType === 'Roadway';
+      
+      if (isRoadway) {
+        totalAssetsCount += 4; // Roadway task represents 4 asset types
+        if (t.status === 'SKIPPED') {
+          skipCount += 4;
+        } else if (t.skippedAssetTypes && t.skippedAssetTypes.length > 0) {
+          skipCount += t.skippedAssetTypes.length;
+        }
+      } else {
+        totalAssetsCount += 1;
+        if (t.status === 'SKIPPED') {
+          skipCount += 1;
+        }
+      }
+
+      if (t.status === 'SKIPPED' && !isRoadway) return;
+      
       if (t.ratings) {
         t.ratings.forEach(r => {
           if (r.score !== undefined) {
@@ -232,7 +249,8 @@ class DecisionAnalyticsService {
             totalRatings++;
             if (r.score <= 4) {
               criticalIssues++;
-              if (t.assetType) assetCriticalMap[t.assetType] = (assetCriticalMap[t.assetType] || 0) + 1;
+              const effectiveAssetType = (isRoadway && r.group) ? r.group : t.assetType;
+              if (effectiveAssetType) assetCriticalMap[effectiveAssetType] = (assetCriticalMap[effectiveAssetType] || 0) + 1;
               if (t.chainage) {
                 const ch = parseCh(t.chainage);
                 chainageCriticalMap[ch] = (chainageCriticalMap[ch] || 0) + 1;
@@ -244,7 +262,7 @@ class DecisionAnalyticsService {
     });
 
     const healthScore = totalRatings > 0 ? parseFloat((sumRatings / totalRatings).toFixed(1)) : 10;
-    const skipRate = tasks.length > 0 ? (skipCount / tasks.length) * 100 : 0;
+    const skipRate = totalAssetsCount > 0 ? (skipCount / totalAssetsCount) * 100 : 0;
 
     // Priority Score: weighted composite (0–100)
     const critScore = Math.min(criticalIssues / 5, 40);       // max 40 pts

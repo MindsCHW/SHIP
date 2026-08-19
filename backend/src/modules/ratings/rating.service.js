@@ -271,7 +271,19 @@ const saveTaskRatings = async (taskId, ratingsData, selectedImageUrl, user) => {
     if (!task.image) task.image = {};
     task.image.cloudinaryUrl = selectedImageUrl;
   }
-  task.status = 'COMPLETED'; // Or 'RATED' based on the workflow
+  
+  if (task.category === 'Roadway') {
+    const ratedGroups = new Set((task.ratings || []).map(r => r.group));
+    const skippedGroups = new Set((task.skippedAssetTypes || []).map(s => s.assetType));
+    const handledGroups = new Set([...ratedGroups, ...skippedGroups]);
+    if (handledGroups.size >= 4) {
+      task.status = 'COMPLETED';
+    } else {
+      task.status = 'IN_PROGRESS';
+    }
+  } else {
+    task.status = 'COMPLETED';
+  }
   await task.save();
 
   // Check if batch is completed
@@ -312,7 +324,7 @@ const saveTaskRatings = async (taskId, ratingsData, selectedImageUrl, user) => {
 const exportRatingsCSV = async (projectId, batchId) => {
   const query = { 
     project: projectId, 
-    status: 'COMPLETED' 
+    status: { $in: ['COMPLETED', 'SKIPPED'] }
   };
   
   if (batchId) {
@@ -326,20 +338,25 @@ const exportRatingsCSV = async (projectId, batchId) => {
   const headers = ['ASSET ID', 'PROJECT', 'CATEGORY', 'ASSET TYPE', 'CHAINAGE', 'DIRECTION', 'PARAMETER', 'SCORE', 'REMARK', 'IMAGE URL', 'RATED AT'];
   const rows = [];
   rows.push(headers.join(','));
+  
+  const skipHeaders = ['CATEGORY', 'ASSET TYPE', 'CHAINAGE', 'SKIP REASON', 'REMARKS', 'IMAGE URL'];
+  const skipRows = [];
+  skipRows.push(skipHeaders.join(','));
 
   tasks.forEach(task => {
     const assetId = (task._id || '').toString().slice(-6).toUpperCase();
-    const aType = task.assetSubType ? `${task.assetType} (${task.assetSubType})` : (task.assetType || '-');
     const project = task.project || '-';
     const chainage = task.chainage || '-';
     const imageUrl = task.image?.cloudinaryUrl || '-';
     const ratedAt = task.updatedAt ? new Date(task.updatedAt).toLocaleDateString('en-GB') : '-';
 
-    if (task.ratings && task.ratings.length > 0) {
+    // Process Ratings
+    if (task.status === 'COMPLETED' && task.ratings && task.ratings.length > 0) {
       task.ratings.forEach(rating => {
         let category = '-';
         let paramText = '-';
         let direction = '-';
+        let aType = task.assetSubType ? `${task.assetType} (${task.assetSubType})` : (task.assetType || '-');
 
         if (rating.masterListId) {
           const param = task.parameters.find(p => p._id.toString() === rating.masterListId.toString());
@@ -347,7 +364,11 @@ const exportRatingsCSV = async (projectId, batchId) => {
           paramText = param ? param.parameter : '-';
           direction = param && param.direction ? param.direction : '-';
         } else if (rating.parameterKey) {
-          category = task.assetType || 'Roadway';
+          category = task.category || 'Roadway';
+          // Correctly map Roadway group to Asset Type
+          if (category === 'Roadway' && rating.group) {
+            aType = rating.group;
+          }
           paramText = rating.parameterName || rating.parameterKey;
           direction = task.direction || '-';
         }
@@ -368,9 +389,35 @@ const exportRatingsCSV = async (projectId, batchId) => {
         rows.push(row.join(','));
       });
     }
+
+    // Process Skips
+    if (task.skippedAssetTypes && task.skippedAssetTypes.length > 0) {
+      task.skippedAssetTypes.forEach(skip => {
+        const skipRow = [
+          `"${task.category || '-'}"`,
+          `"${skip.assetType || '-'}"`,
+          `"${chainage}"`,
+          `"${(skip.reason || '').replace(/"/g, '""')}"`,
+          `"${(skip.remarks || '').replace(/"/g, '""')}"`,
+          `"${imageUrl}"`
+        ];
+        skipRows.push(skipRow.join(','));
+      });
+    } else if (task.status === 'SKIPPED' && task.skipMetadata) {
+      // Legacy / full task skip
+      const skipRow = [
+        `"${task.category || '-'}"`,
+        `"${task.assetType || '-'}"`,
+        `"${chainage}"`,
+        `"${(task.skipMetadata.reason || '').replace(/"/g, '""')}"`,
+        `"${(task.skipMetadata.remarks || '').replace(/"/g, '""')}"`,
+        `"${imageUrl}"`
+      ];
+      skipRows.push(skipRow.join(','));
+    }
   });
 
-  return rows.join('\n');
+  return rows.join('\n') + '\n\n' + '=== SKIP GALLERY / SKIPPED ASSETS ===\n\n' + skipRows.join('\n');
 };
 
 /**
@@ -400,21 +447,52 @@ const skipTask = async (taskId, skipData, user) => {
     }
   }
 
-  if (!skipData.reason) {
+  const reason = skipData.skipReason || skipData.reason;
+  if (!reason) {
     throw Object.assign(new Error('Skip reason is required'), { statusCode: 400 });
   }
 
-  if (skipData.reason === 'Other' && !skipData.remarks) {
+  if (reason === 'Other' && !skipData.remarks) {
     throw Object.assign(new Error('Remarks are required when skip reason is "Other"'), { statusCode: 400 });
   }
 
-  task.status = 'SKIPPED';
-  task.skipMetadata = {
-    reason: skipData.reason,
-    remarks: skipData.remarks || '',
-    skippedBy: user._id,
-    skippedAt: new Date()
-  };
+  if (skipData.assetType && task.category === 'Roadway') {
+    // Asset-level skip for Roadway
+    if (!task.skippedAssetTypes) task.skippedAssetTypes = [];
+    
+    // Remove if already exists to update
+    task.skippedAssetTypes = task.skippedAssetTypes.filter(s => s.assetType !== skipData.assetType);
+    
+    task.skippedAssetTypes.push({
+      assetType: skipData.assetType,
+      reason: reason,
+      remarks: skipData.remarks || '',
+      skippedBy: user._id,
+      skippedAt: new Date()
+    });
+
+    // Check if task is COMPLETED. A Roadway task is COMPLETED when all 4 asset types are RATED or SKIPPED
+    const ratedGroups = new Set((task.ratings || []).map(r => r.group));
+    const skippedGroups = new Set(task.skippedAssetTypes.map(s => s.assetType));
+    
+    // Total unique handled groups
+    const handledGroups = new Set([...ratedGroups, ...skippedGroups]);
+    if (handledGroups.size >= 4) {
+      task.status = 'COMPLETED';
+    } else {
+      task.status = 'IN_PROGRESS';
+    }
+  } else {
+    // Legacy / Full task skip
+    task.status = 'SKIPPED';
+    task.skipMetadata = {
+      reason: reason,
+      remarks: skipData.remarks || '',
+      skippedBy: user._id,
+      skippedAt: new Date()
+    };
+  }
+  
   await task.save();
 
   // Check if batch is completed
