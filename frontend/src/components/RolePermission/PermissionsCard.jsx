@@ -5,7 +5,7 @@ import PermissionTable from './PermissionTable';
 
 const PermissionsCard = () => {
   return (
-    <div className="bg-cardBg border border-borderColor rounded-lg shadow-sm">
+    <div className="bg-cardBg border border-[#5cb85c]/30 rounded-lg shadow-sm">
       <div className="flex items-center justify-between p-6">
         <div className="flex items-center gap-2 text-gray-900">
           <MdLock className="text-xl" />

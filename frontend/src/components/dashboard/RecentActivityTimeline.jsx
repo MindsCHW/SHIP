@@ -1,66 +1,70 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { MdEdit, MdAddCircle, MdCheckCircle } from 'react-icons/md';
+import { MdCheckCircle, MdWarning, MdPendingActions } from 'react-icons/md';
 
-const updatesData = [
-  { id: 1, roadName: 'MKTPL', user: 'Thatipally Manoj Kumar', action: '"Physical Condition" Parameter hoRating edit...', date: '15-Jul-26, 10:47 AM', type: 'edit' },
-  { id: 2, roadName: 'NKTPL', user: 'Raavi Likhitha', action: '"Lane line Marking Night Visibility" Parameter ...', date: '15-Jul-26, 10:47 AM', type: 'add' },
-  { id: 3, roadName: 'MKTPL', user: 'Thatipally Manoj Kumar', action: '"Painting" Parameter hoRating edited to "10"', date: '15-Jul-26, 10:47 AM', type: 'edit' },
-  { id: 4, roadName: 'MSHP', user: 'Punith', action: '"Unevenness" Parameter spvRating edited to ...', date: '15-Jul-26, 10:47 AM', type: 'check' },
-  { id: 5, roadName: 'NKTPL', user: 'Raavi Likhitha', action: '"Edge line Marking" Parameter hoRating edite...', date: '15-Jul-26, 10:47 AM', type: 'edit' },
-];
+const RecentActivityTimeline = ({ selectedProject }) => {
+  const [data, setData] = useState([]);
 
-const getIcon = (type) => {
-  switch (type) {
-    case 'edit': return <MdEdit className="text-blue-500" />;
-    case 'add': return <MdAddCircle className="text-green-500" />;
-    case 'check': return <MdCheckCircle className="text-purple-500" />;
-    default: return <MdEdit className="text-gray-500" />;
-  }
-};
+  useEffect(() => {
+    import('../../services/dashboard.service').then(({ dashboardService }) => {
+      dashboardService.getRecentActivity(selectedProject || '').then(res => {
+        setData(Array.isArray(res) ? res : (res.data || []));
+      }).catch(console.error);
+    });
+  }, [selectedProject]);
 
-const getBg = (type) => {
-  switch (type) {
-    case 'edit': return 'bg-blue-100';
-    case 'add': return 'bg-green-100';
-    case 'check': return 'bg-purple-100';
-    default: return 'bg-gray-100';
-  }
-};
-
-const RecentActivityTimeline = () => {
   return (
-    <div className="bg-white border border-borderColor rounded-xl p-5 shadow-sm h-full flex flex-col">
+    <div className="bg-white border border-borderColor rounded-xl p-5 shadow-sm h-full">
       <div className="flex justify-between items-center mb-6">
-        <h3 className="text-gray-700 font-bold text-sm tracking-wide uppercase">Recent Activities</h3>
-        <span className="text-xs text-primary font-medium cursor-pointer hover:underline">View History</span>
+        <h3 className="text-gray-700 font-bold text-sm tracking-wide uppercase">Recent Activity</h3>
+        <span className="text-xs text-primary font-medium cursor-pointer hover:underline">View Full Log</span>
       </div>
 
-      <div className="relative border-l border-gray-200 ml-3 flex-1 overflow-y-auto pr-2">
-        {updatesData.map((item, index) => (
-          <motion.div 
-            key={item.id}
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: index * 0.1 }}
-            className="mb-6 ml-6 relative"
-          >
-            <span className={`absolute flex items-center justify-center w-6 h-6 rounded-full -left-9 ring-4 ring-white ${getBg(item.type)} shadow-sm`}>
-              {getIcon(item.type)}
-            </span>
-            <div className="bg-gray-50 p-3 rounded-lg border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
-              <div className="flex justify-between items-start mb-1">
-                <span className="text-xs font-bold text-gray-800">{item.roadName}</span>
-                <span className="text-[10px] text-gray-400 font-medium">{item.date}</span>
-              </div>
-              <p className="text-xs text-gray-600 mb-2">{item.action}</p>
-              <div className="text-[10px] text-gray-500 font-medium flex items-center gap-1">
-                By <span className="font-bold text-primary">{item.user}</span>
-              </div>
-            </div>
-          </motion.div>
-        ))}
-      </div>
+      {data.length === 0 ? (
+        <div className="text-center text-gray-500 py-4">No recent activity</div>
+      ) : (
+        <div className="relative border-l border-gray-200 ml-3 space-y-6">
+          {data.map((activity, index) => {
+            const isCritical = activity.score <= 5;
+            
+            return (
+              <motion.div 
+                key={activity.id}
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: index * 0.1 }}
+                className="relative pl-6 group"
+              >
+                {/* Timeline dot */}
+                <div className={`absolute -left-2 top-0.5 w-4 h-4 rounded-full border-2 border-white shadow-sm flex items-center justify-center ${
+                  isCritical ? 'bg-red-500' : 'bg-green-500'
+                }`}>
+                </div>
+
+                <div className="flex justify-between items-start mb-1">
+                  <div>
+                    <h4 className="text-sm font-bold text-gray-800 flex items-center gap-2">
+                      {activity.project} 
+                      <span className="text-gray-400 font-normal text-xs">•</span>
+                      <span className="text-xs font-normal text-gray-600">{activity.assetType}</span>
+                    </h4>
+                    <p className="text-xs text-gray-600 mt-1">
+                      <span className="font-semibold">{activity.parameter}</span> rated <span className={`font-bold ${isCritical ? 'text-red-500' : 'text-green-500'}`}>{activity.score}</span> by {activity.actor}
+                    </p>
+                  </div>
+                  <span className="text-[11px] text-gray-400 font-medium whitespace-nowrap bg-gray-50 px-2 py-1 rounded">
+                    {new Date(activity.date).toLocaleString()}
+                  </span>
+                </div>
+                
+                <div className="mt-2 inline-flex text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded bg-gray-100 text-gray-600">
+                  Chainage: {activity.chainage}
+                </div>
+              </motion.div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 };

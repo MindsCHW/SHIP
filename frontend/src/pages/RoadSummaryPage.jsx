@@ -6,86 +6,8 @@ import Navbar from '../components/Navbar';
 import Sidebar from '../components/Sidebar';
 import SegmentedFilters from '../components/Rating/SegmentedFilters';
 import CustomDropdown from '../components/common/CustomDropdown';
-
-const roadwayData = [
-  { status: 'x', typeOfWork: 'Maintenance', category: 'Roadway', assetType: 'Embankment', direction: 'LHS', roadType: 'MCW', chainage: '209.67', date: '09-Jul-26, 11.03.39 AM', reporter: 'Ravi Kumar' },
-  { status: 'x', typeOfWork: 'Maintenance', category: 'Roadway', assetType: 'Drainage', direction: 'LHS', roadType: 'MCW', chainage: '209.67', date: '09-Jul-26, 11.03.39 AM', reporter: 'Ravi Kumar' },
-  { status: 'x', typeOfWork: 'Maintenance', category: 'Roadway', assetType: 'Embankment', direction: 'LHS', roadType: 'SR', chainage: '209.67', date: '09-Jul-26, 11.03.39 AM', reporter: 'Ravi Kumar' },
-  { status: 'x', typeOfWork: 'Maintenance', category: 'Roadway', assetType: 'Pavement', direction: 'LHS', roadType: 'MCW', chainage: '209.67', date: '09-Jul-26, 11.03.39 AM', reporter: 'Ravi Kumar' },
-  { status: 'x', typeOfWork: 'Maintenance', category: 'Roadway', assetType: 'Shoulder', direction: 'LHS', roadType: 'MCW', chainage: '209.67', date: '09-Jul-26, 11.03.39 AM', reporter: 'Ravi Kumar' },
-  { status: 'x', typeOfWork: 'Maintenance', category: 'Roadway', assetType: 'Kerb', direction: 'LHS', roadType: 'MCW', chainage: '209.67', date: '09-Jul-26, 11.03.39 AM', reporter: 'Ravi Kumar' },
-  { status: 'x', typeOfWork: 'Maintenance', category: 'Roadway', assetType: 'Drainage', direction: 'LHS', roadType: 'SR', chainage: '209.67', date: '09-Jul-26, 11.03.39 AM', reporter: 'Ravi Kumar' },
-  { status: 'x', typeOfWork: 'Maintenance', category: 'Roadway', assetType: 'Embankment', direction: 'LHS', roadType: 'MCW', chainage: '209.69', date: '09-Jul-26, 11.03.39 AM', reporter: 'Ravi Kumar' },
-  { status: 'x', typeOfWork: 'Maintenance', category: 'Roadway', assetType: 'Drainage', direction: 'LHS', roadType: 'MCW', chainage: '209.69', date: '09-Jul-26, 11.03.39 AM', reporter: 'Ravi Kumar' },
-  { status: 'x', typeOfWork: 'Maintenance', category: 'Roadway', assetType: 'Embankment', direction: 'LHS', roadType: 'SR', chainage: '209.69', date: '09-Jul-26, 11.03.39 AM', reporter: 'Ravi Kumar' },
-];
-
-const signageData = [
-  { status: 'x', typeOfWork: 'Maintenance', category: 'Road Signage and Furniture', assetType: 'Pavement Markings', direction: 'RHS', roadType: 'MCW', chainage: '139.56', date: '09-Jul-26, 11.03.39 AM', reporter: 'Ravi Kumar' },
-  { status: 'x', typeOfWork: 'Maintenance', category: 'Road Signage and Furniture', assetType: 'Signages', direction: 'RHS', roadType: 'MCW', chainage: '149.65', date: '09-Jul-26, 11.03.39 AM', reporter: 'Ravi Kumar' },
-  { status: 'x', typeOfWork: 'Maintenance', category: 'Road Signage and Furniture', assetType: 'Pavement Markings', direction: 'RHS', roadType: 'SR', chainage: '154.41', date: '09-Jul-26, 11.03.39 AM', reporter: 'Ravi Kumar' },
-  { status: 'x', typeOfWork: 'Maintenance', category: 'Road Signage and Furniture', assetType: 'Pavement Markings', direction: 'RHS', roadType: 'SR', chainage: '159.21', date: '09-Jul-26, 11.03.39 AM', reporter: 'Ravi Kumar' },
-  { status: 'x', typeOfWork: 'Maintenance', category: 'Road Signage and Furniture', assetType: 'Signages', direction: 'RHS', roadType: 'MCW', chainage: '166.17', date: '09-Jul-26, 11.03.39 AM', reporter: 'Ravi Kumar' },
-  { status: 'x', typeOfWork: 'Maintenance', category: 'Road Signage and Furniture', assetType: 'Signages', direction: 'RHS', roadType: 'MCW', chainage: '168.5', date: '09-Jul-26, 11.03.39 AM', reporter: 'Ravi Kumar' },
-  { status: 'x', typeOfWork: 'Maintenance', category: 'Road Signage and Furniture', assetType: 'Traffic Blinkers and Signals', direction: 'RHS', roadType: 'MCW', chainage: '180.05', date: '09-Jul-26, 11.03.39 AM', reporter: 'Ravi Kumar' },
-  { status: 'x', typeOfWork: 'Maintenance', category: 'Road Signage and Furniture', assetType: 'Pavement Markings', direction: 'RHS', roadType: 'MCW', chainage: '180.21', date: '09-Jul-26, 11.03.39 AM', reporter: 'Ravi Kumar' },
-  { status: 'x', typeOfWork: 'Maintenance', category: 'Road Signage and Furniture', assetType: 'Traffic Blinkers and Signals', direction: 'LHS', roadType: 'MCW', chainage: '191.61', date: '09-Jul-26, 11.03.39 AM', reporter: 'Ravi Kumar' },
-  { status: 'x', typeOfWork: 'Maintenance', category: 'Road Signage and Furniture', assetType: 'Lightings', direction: 'LHS', roadType: 'SR', chainage: '208.58', date: '09-Jul-26, 11.03.39 AM', reporter: 'Ravi Kumar' },
-];
-
-const projectFacilitiesData = [
-  { status: 'x', typeOfWork: 'Maintenance', category: 'Project Facilities', assetType: 'Bus Bay', direction: 'RHS', roadType: 'MCW', chainage: '141.98', date: '09-Jul-26, 11.03.38 AM', reporter: 'Ravi Kumar' },
-  { status: 'x', typeOfWork: 'Maintenance', category: 'Project Facilities', assetType: 'Bus Bay', direction: 'LHS', roadType: 'MCW', chainage: '142.76', date: '09-Jul-26, 11.03.36 AM', reporter: 'Ravi Kumar' },
-  { status: 'x', typeOfWork: 'Maintenance', category: 'Project Facilities', assetType: 'Bus Bay', direction: 'LHS', roadType: 'MCW', chainage: '163.13', date: '09-Jul-26, 11.03.36 AM', reporter: 'Ravi Kumar' },
-  { status: 'x', typeOfWork: 'Maintenance', category: 'Project Facilities', assetType: 'Bus Bay', direction: 'RHS', roadType: 'MCW', chainage: '181.86', date: '09-Jul-26, 11.03.36 AM', reporter: 'Ravi Kumar' },
-  { status: 'x', typeOfWork: 'Maintenance', category: 'Project Facilities', assetType: 'Bus Bay', direction: 'LHS', roadType: 'MCW', chainage: '186.07', date: '09-Jul-26, 11.03.36 AM', reporter: 'Ravi Kumar' },
-  { status: 'x', typeOfWork: 'Maintenance', category: 'Project Facilities', assetType: 'Toilet Block', direction: 'RHS', roadType: 'MCW', chainage: '202.86', date: '09-Jul-26, 11.03.36 AM', reporter: 'Ravi Kumar' },
-];
-
-const structuresData = [
-  { status: 'x', typeOfWork: 'Maintenance', assetId: 'APEL-RA-MJB-2', category: 'Structures', assetType: 'Major Bridge', subCategory: 'Stagnation Of Rain Water', direction: 'RHS', chainage: '162.74', date: '09-Jul-26, 11.03.39 AM', reporter: 'Ravi Kumar' },
-  { status: 'x', typeOfWork: 'Maintenance', assetId: 'APEL-RA-MJB-2', category: 'Structures', assetType: 'Major Bridge', subCategory: 'Stagnation Of Rain Water', direction: 'LHS', chainage: '162.74', date: '09-Jul-26, 11.03.39 AM', reporter: 'Ravi Kumar' },
-  { status: 'x', typeOfWork: 'Maintenance', assetId: 'APEL-RA-MJB-2', category: 'Structures', assetType: 'Major Bridge', subCategory: 'Stagnation Of Rain Water', direction: 'RHS', chainage: '162.72', date: '09-Jul-26, 11.03.39 AM', reporter: 'Ravi Kumar' },
-  { status: 'x', typeOfWork: 'Maintenance', assetId: 'APEL-RA-MJB-2', category: 'Structures', assetType: 'Major Bridge', subCategory: 'Stagnation Of Rain Water', direction: 'LHS', chainage: '162.72', date: '09-Jul-26, 11.03.39 AM', reporter: 'Ravi Kumar' },
-  { status: 'x', typeOfWork: 'Maintenance', assetId: 'APEL-RA-MJB-2', category: 'Structures', assetType: 'Major Bridge', subCategory: 'Stagnation Of Rain Water', direction: 'RHS', chainage: '162.7', date: '09-Jul-26, 11.03.39 AM', reporter: 'Ravi Kumar' },
-  { status: 'x', typeOfWork: 'Maintenance', assetId: 'APEL-RA-MJB-2', category: 'Structures', assetType: 'Major Bridge', subCategory: 'Stagnation Of Rain Water', direction: 'LHS', chainage: '162.7', date: '09-Jul-26, 11.03.39 AM', reporter: 'Ravi Kumar' },
-  { status: 'x', typeOfWork: 'Maintenance', assetId: 'APEL-RA-MJB-2', category: 'Structures', assetType: 'Major Bridge', subCategory: 'Stagnation Of Rain Water', direction: 'RHS', chainage: '162.68', date: '09-Jul-26, 11.03.39 AM', reporter: 'Ravi Kumar' },
-  { status: 'x', typeOfWork: 'Maintenance', assetId: 'APEL-RA-MJB-2', category: 'Structures', assetType: 'Major Bridge', subCategory: 'Stagnation Of Rain Water', direction: 'LHS', chainage: '162.68', date: '09-Jul-26, 11.03.39 AM', reporter: 'Ravi Kumar' },
-  { status: 'x', typeOfWork: 'Maintenance', assetId: 'APEL-RA-MJB-2', category: 'Structures', assetType: 'Major Bridge', subCategory: 'Stagnation Of Rain Water', direction: 'RHS', chainage: '162.66', date: '09-Jul-26, 11.03.39 AM', reporter: 'Ravi Kumar' },
-  { status: 'x', typeOfWork: 'Maintenance', assetId: 'APEL-RA-MJB-2', category: 'Structures', assetType: 'Major Bridge', subCategory: 'Stagnation Of Rain Water', direction: 'LHS', chainage: '162.66', date: '09-Jul-26, 11.03.39 AM', reporter: 'Ravi Kumar' },
-];
-
-const atmsData = [
-  { status: 'x', typeOfWork: 'Operations', category: 'ATMS', assetType: 'MET', direction: 'LHS', roadType: 'MCW', chainage: '153.51', date: '09-Jul-26, 11.03.37 AM', reporter: 'Ravi Kumar' },
-  { status: 'x', typeOfWork: 'Operations', category: 'ATMS', assetType: 'VMS Full', direction: 'LHS', roadType: 'MCW', chainage: '186.608', date: '09-Jul-26, 11.03.37 AM', reporter: 'Ravi Kumar' },
-  { status: 'x', typeOfWork: 'Operations', category: 'ATMS', assetType: 'MET', direction: 'RHS', roadType: 'MCW', chainage: '201', date: '09-Jul-26, 11.03.37 AM', reporter: 'Ravi Kumar' },
-];
-
-const tmsData = [
-  { status: 'x', typeOfWork: 'Operations', category: 'TMS', laneType: 'TP-1-RHS-L6', subCategory: 'Static Weigh Bridge (SWB)', direction: 'RHS', roadType: 'MCW', chainage: '200.65', date: '09-Jul-26, 11.03.37 AM', reporter: 'Ravi Kumar' },
-  { status: 'x', typeOfWork: 'Operations', category: 'TMS', laneType: 'TP-1-RHS-L6', subCategory: 'Weigh in Motion (WIM)', direction: 'RHS', roadType: 'MCW', chainage: '200.65', date: '09-Jul-26, 11.03.37 AM', reporter: 'Ravi Kumar' },
-  { status: 'x', typeOfWork: 'Operations', category: 'TMS', laneType: 'TP-1-RHS-L6', subCategory: 'Automatic Vehicle Classification and Counting system (AVCC)', direction: 'RHS', roadType: 'MCW', chainage: '200.65', date: '09-Jul-26, 11.03.37 AM', reporter: 'Ravi Kumar' },
-  { status: 'x', typeOfWork: 'Operations', category: 'TMS', laneType: 'TP-1-RHS-L6', subCategory: 'Incident Camera', direction: 'RHS', roadType: 'MCW', chainage: '200.65', date: '09-Jul-26, 11.03.37 AM', reporter: 'Ravi Kumar' },
-  { status: 'x', typeOfWork: 'Operations', category: 'TMS', laneType: 'TP-1-RHS-L6', subCategory: 'License Plate Indicatory Camera (LPIC)', direction: 'RHS', roadType: 'MCW', chainage: '200.65', date: '09-Jul-26, 11.03.37 AM', reporter: 'Ravi Kumar' },
-  { status: 'x', typeOfWork: 'Operations', category: 'TMS', laneType: 'TP-1-RHS-L6', subCategory: 'Operator Customized Keyboard', direction: 'RHS', roadType: 'MCW', chainage: '200.65', date: '09-Jul-26, 11.03.37 AM', reporter: 'Ravi Kumar' },
-  { status: 'x', typeOfWork: 'Operations', category: 'TMS', laneType: 'TP-1-RHS-L6', subCategory: 'Overhead Lane Status Light (OHLS)', direction: 'RHS', roadType: 'MCW', chainage: '200.65', date: '09-Jul-26, 11.03.37 AM', reporter: 'Ravi Kumar' },
-  { status: 'x', typeOfWork: 'Operations', category: 'TMS', laneType: 'TP-1-RHS-L6', subCategory: 'User Fare Display (UFD)', direction: 'RHS', roadType: 'MCW', chainage: '200.65', date: '09-Jul-26, 11.03.37 AM', reporter: 'Ravi Kumar' },
-  { status: 'x', typeOfWork: 'Operations', category: 'TMS', laneType: 'TP-1-RHS-L6', subCategory: 'Operator Monitor', direction: 'RHS', roadType: 'MCW', chainage: '200.65', date: '09-Jul-26, 11.03.37 AM', reporter: 'Ravi Kumar' },
-  { status: 'x', typeOfWork: 'Operations', category: 'TMS', laneType: 'TP-1-RHS-L6', subCategory: 'Automatic Boom Barrier', direction: 'RHS', roadType: 'MCW', chainage: '200.65', date: '09-Jul-26, 11.03.37 AM', reporter: 'Ravi Kumar' },
-];
-
-const landscapingData = [
-  { status: 'x', typeOfWork: 'Maintenance', category: 'Landscaping', assetType: 'APEL-Plant-1232', subCategory: 'Row', direction: 'LHS', roadType: 'MCW', chainage: '208.97', date: '09-Jul-26, 11.03.39 AM', reporter: 'Ravi Kumar' },
-  { status: 'x', typeOfWork: 'Maintenance', category: 'Landscaping', assetType: 'APEL-Plant-1232', subCategory: 'Median', direction: 'LHS', roadType: 'MCW', chainage: '208.97', date: '09-Jul-26, 11.03.39 AM', reporter: 'Ravi Kumar' },
-  { status: 'x', typeOfWork: 'Maintenance', category: 'Landscaping', assetType: 'APEL-Plant-1233', subCategory: 'Row', direction: 'RHS', roadType: 'MCW', chainage: '209.56', date: '09-Jul-26, 11.03.39 AM', reporter: 'Ravi Kumar' },
-  { status: 'x', typeOfWork: 'Maintenance', category: 'Landscaping', assetType: 'APEL-Plant-1233', subCategory: 'Median', direction: 'RHS', roadType: 'MCW', chainage: '209.56', date: '09-Jul-26, 11.03.39 AM', reporter: 'Ravi Kumar' },
-  { status: 'x', typeOfWork: 'Maintenance', category: 'Landscaping', assetType: 'APEL-Plant-1234', subCategory: 'Row', direction: 'RHS', roadType: 'MCW', chainage: '209.58', date: '09-Jul-26, 11.03.39 AM', reporter: 'Ravi Kumar' },
-  { status: 'x', typeOfWork: 'Maintenance', category: 'Landscaping', assetType: 'APEL-Plant-1234', subCategory: 'Median', direction: 'RHS', roadType: 'MCW', chainage: '209.58', date: '09-Jul-26, 11.03.39 AM', reporter: 'Ravi Kumar' },
-  { status: 'x', typeOfWork: 'Maintenance', category: 'Landscaping', assetType: 'APEL-Plant-1235', subCategory: 'Row', direction: 'LHS', roadType: 'MCW', chainage: '209.67', date: '09-Jul-26, 11.03.39 AM', reporter: 'Ravi Kumar' },
-  { status: 'x', typeOfWork: 'Maintenance', category: 'Landscaping', assetType: 'APEL-Plant-1235', subCategory: 'Median', direction: 'LHS', roadType: 'MCW', chainage: '209.67', date: '09-Jul-26, 11.03.39 AM', reporter: 'Ravi Kumar' },
-  { status: 'x', typeOfWork: 'Maintenance', category: 'Landscaping', assetType: 'APEL-Plant-595', subCategory: 'Row', direction: 'LHS', roadType: 'MCW', chainage: '209.69', date: '09-Jul-26, 11.03.39 AM', reporter: 'Ravi Kumar' },
-  { status: 'x', typeOfWork: 'Maintenance', category: 'Landscaping', assetType: 'APEL-Plant-595', subCategory: 'Median', direction: 'LHS', roadType: 'MCW', chainage: '209.69', date: '09-Jul-26, 11.03.39 AM', reporter: 'Ravi Kumar' },
-];
+import { ratingService } from '../services/rating.service';
+import { masterListService } from '../services/masterList.service';
 
 const RoadSummaryPage = () => {
   const { roadId } = useParams();
@@ -95,7 +17,23 @@ const RoadSummaryPage = () => {
   const [direction, setDirection] = useState('Choose Direction');
   const [roadType, setRoadType] = useState('Choose Road Type');
   const [paramType, setParamType] = useState('Choose');
-  const [version, setVersion] = useState('Jul 26');
+  const [minChainage, setMinChainage] = useState('');
+  const [maxChainage, setMaxChainage] = useState('');
+  const [concernedItems, setConcernedItems] = useState(false);
+  const [goToPageInput, setGoToPageInput] = useState('');
+  
+  const [appliedFilters, setAppliedFilters] = useState({
+    category: 'Roadway',
+    minChainage: '',
+    maxChainage: '',
+    direction: 'Choose Direction',
+    roadType: 'Choose Road Type',
+    paramType: 'Choose',
+    concernedItems: false,
+  });
+  
+  const [version, setVersion] = useState('Choose');
+  const [projectBatches, setProjectBatches] = useState([]);
 
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -107,28 +45,173 @@ const RoadSummaryPage = () => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [navigate]);
   
-  let currentData = roadwayData;
-  let totalPages = 98;
+  const [questions, setQuestions] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [activeBatchId, setActiveBatchId] = useState(null);
   
-  if (selectedCategory === 'Road Signage and Furniture') {
-    currentData = signageData;
-    totalPages = 135;
-  } else if (selectedCategory === 'Project Facilities') {
-    currentData = projectFacilitiesData;
-    totalPages = 1;
-  } else if (selectedCategory === 'Structures') {
-    currentData = structuresData;
-    totalPages = 123;
-  } else if (selectedCategory === 'ATMS') {
-    currentData = atmsData;
-    totalPages = 1;
-  } else if (selectedCategory === 'TMS') {
-    currentData = tmsData;
-    totalPages = 14;
-  } else if (selectedCategory === 'Landscaping') {
-    currentData = landscapingData;
-    totalPages = 28;
+  useEffect(() => {
+    const fetchTasks = async () => {
+      try {
+        setLoading(true);
+        const batchesRes = await ratingService.getReadyBatches();
+        const batches = Array.isArray(batchesRes) ? batchesRes : (batchesRes?.data || []);
+        
+        const projectBatches = batches.filter(b => b.project === roadId && (b.status === 'READY_FOR_RATING' || b.status === 'IN_PROGRESS'));
+        if (projectBatches.length > 0) {
+          projectBatches.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+          setProjectBatches(projectBatches);
+          
+          const latestBatch = projectBatches[0];
+          setActiveBatchId(latestBatch._id);
+          setVersion(new Date(latestBatch.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }));
+          
+          const data = await ratingService.getBatchTasks(latestBatch._id);
+          const fetchedTasks = Array.isArray(data) ? data : (data?.data || []);
+          
+          const tasksAsAssets = fetchedTasks.map((task, globalIndex) => {
+            const firstParam = task.parameters?.[0] || {};
+            return {
+              _id: task._id,
+              assetId: (task._id || '').toString().slice(-6).toUpperCase(),
+              project: task.project || firstParam.project,
+              category: task.category || firstParam.category || '-',
+              assetType: task.assetSubType ? `${task.assetType} (${task.assetSubType})` : (task.assetType || firstParam.assetType || '-'),
+              chainage: task.chainage,
+              parameterCount: task.category === 'Roadway' ? (task.ratings?.length || 0) : (task.parameters?.length || 0),
+              taskGlobalIndex: globalIndex,
+              status: task.status,
+              createdAt: task.createdAt,
+              direction: task.direction || firstParam.direction || '-',
+              roadType: task.roadType || firstParam.roadType || '-'
+            };
+          });
+          setQuestions(tasksAsAssets);
+        } else {
+          setQuestions([]);
+        }
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    if (roadId) {
+      fetchTasks();
+    }
+  }, [roadId]);
+
+  useEffect(() => {
+    if (version !== 'Choose' && projectBatches.length > 0) {
+      const selectedBatch = projectBatches.find(b => 
+        new Date(b.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) === version
+      ) || projectBatches[0];
+      
+      if (selectedBatch && selectedBatch._id !== activeBatchId) {
+        setActiveBatchId(selectedBatch._id);
+        setLoading(true);
+        ratingService.getBatchTasks(selectedBatch._id)
+          .then(data => {
+            const fetchedTasks = Array.isArray(data) ? data : (data?.data || []);
+            const tasksAsAssets = fetchedTasks.map((task, globalIndex) => {
+              const firstParam = task.parameters?.[0] || {};
+              return {
+                _id: task._id,
+                assetId: (task._id || '').toString().slice(-6).toUpperCase(),
+                project: task.project || firstParam.project,
+                category: task.category || firstParam.category || '-',
+                assetType: task.assetSubType ? `${task.assetType} (${task.assetSubType})` : (task.assetType || firstParam.assetType || '-'),
+                chainage: task.chainage,
+                parameterCount: task.category === 'Roadway' ? (task.ratings?.length || 0) : (task.parameters?.length || 0),
+                taskGlobalIndex: globalIndex,
+                status: task.status,
+                createdAt: task.createdAt,
+                direction: task.direction || firstParam.direction || '-',
+                roadType: task.roadType || firstParam.roadType || '-'
+              };
+            });
+            setQuestions(tasksAsAssets);
+          })
+          .catch(console.error)
+          .finally(() => setLoading(false));
+      }
+    }
+  }, [version, projectBatches, activeBatchId]);
+
+  let currentData = questions;
+  
+  // Apply filters based on appliedFilters state
+  if (appliedFilters.category && appliedFilters.category !== 'All') {
+    currentData = currentData.filter(q => q.category === appliedFilters.category);
   }
+  if (appliedFilters.direction && appliedFilters.direction !== 'Choose Direction' && appliedFilters.direction !== 'All') {
+    currentData = currentData.filter(q => q.direction === appliedFilters.direction);
+  }
+  if (appliedFilters.roadType && appliedFilters.roadType !== 'Choose Road Type' && appliedFilters.roadType !== 'All') {
+    currentData = currentData.filter(q => q.roadType === appliedFilters.roadType);
+  }
+  if (appliedFilters.minChainage) {
+    const min = parseFloat(appliedFilters.minChainage);
+    if (!isNaN(min)) {
+      currentData = currentData.filter(q => parseFloat(q.chainage) >= min);
+    }
+  }
+  if (appliedFilters.maxChainage) {
+    const max = parseFloat(appliedFilters.maxChainage);
+    if (!isNaN(max)) {
+      currentData = currentData.filter(q => parseFloat(q.chainage) <= max);
+    }
+  }
+  
+  let totalPages = Math.ceil(currentData.length / 10) || 1;
+  
+  // Apply Pagination
+  const indexOfLastItem = currentPage * 10;
+  const indexOfFirstItem = indexOfLastItem - 10;
+  const currentItems = currentData.slice(indexOfFirstItem, indexOfLastItem);
+  
+  const handleGetRatings = () => {
+    setAppliedFilters({
+      category: selectedCategory,
+      minChainage,
+      maxChainage,
+      direction,
+      roadType,
+      paramType,
+      concernedItems,
+    });
+    setCurrentPage(1);
+  };
+
+  const handleGoToPage = (e) => {
+    e.preventDefault();
+    const pageNum = parseInt(goToPageInput, 10);
+    if (!isNaN(pageNum) && pageNum >= 1 && pageNum <= totalPages) {
+      setCurrentPage(pageNum);
+      setGoToPageInput('');
+    } else if (goToPageInput.trim() !== '') {
+      alert(`Please enter a valid page number between 1 and ${totalPages}`);
+    }
+  };
+  
+  const handleExportCSV = async () => {
+    try {
+      const response = await ratingService.exportRatingsCSV(roadId, activeBatchId);
+      const blob = new Blob([response], { type: 'text/csv' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `Ratings_Export_${roadId}_${new Date().toISOString().slice(0,10)}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      a.remove();
+    } catch (err) {
+      console.error(err);
+      alert('Failed to export CSV');
+    }
+  };
+
+  
   const tabsFilters = [
     { id: 'RATING POINTS', label: 'RATING POINTS' },
     { id: 'RATING SUMMARY', label: 'RATING SUMMARY' },
@@ -159,11 +242,12 @@ const RoadSummaryPage = () => {
 
       <div className="p-6 flex flex-col flex-1 overflow-hidden">
         {/* Filters */}
-        <div className="grid grid-cols-6 gap-4 mb-6 shrink-0">
+        <div className="grid grid-cols-7 gap-4 mb-6 shrink-0">
           <div>
             <label className="block text-xs font-medium text-gray-700 mb-1">Category :</label>
             <CustomDropdown
               options={[
+                'All',
                 'Roadway',
                 'Road Signage and Furniture',
                 'Project Facilities',
@@ -182,11 +266,11 @@ const RoadSummaryPage = () => {
           </div>
           <div>
             <label className="block text-xs font-medium text-gray-700 mb-1">Min Chainage :</label>
-            <input type="text" placeholder="Enter Chainage" className="w-full border border-[#5cb85c] rounded px-3 py-1.5 text-sm bg-white focus:outline-none focus:border-[#5cb85c] focus:ring-2 focus:ring-[#5cb85c]/20 transition-all" />
+            <input type="text" value={minChainage} onChange={(e) => setMinChainage(e.target.value)} placeholder="Enter Chainage" className="w-full border border-[#5cb85c] rounded px-3 py-1.5 text-sm bg-white focus:outline-none focus:border-[#5cb85c] focus:ring-2 focus:ring-[#5cb85c]/20 transition-all" />
           </div>
           <div>
             <label className="block text-xs font-medium text-gray-700 mb-1">Max Chainage :</label>
-            <input type="text" placeholder="Enter Chainage" className="w-full border border-[#5cb85c] rounded px-3 py-1.5 text-sm bg-white focus:outline-none focus:border-[#5cb85c] focus:ring-2 focus:ring-[#5cb85c]/20 transition-all" />
+            <input type="text" value={maxChainage} onChange={(e) => setMaxChainage(e.target.value)} placeholder="Enter Chainage" className="w-full border border-[#5cb85c] rounded px-3 py-1.5 text-sm bg-white focus:outline-none focus:border-[#5cb85c] focus:ring-2 focus:ring-[#5cb85c]/20 transition-all" />
           </div>
           <div>
             <label className="block text-xs font-medium text-gray-700 mb-1">Direction :</label>
@@ -215,30 +299,47 @@ const RoadSummaryPage = () => {
               placeholder="Parameter Type"
             />
           </div>
+          <div>
+            <label className="block text-[11px] font-medium text-gray-700 mb-1">Go to Page :</label>
+            <form onSubmit={handleGoToPage} className="flex gap-2">
+              <input 
+                type="number" 
+                min="1" 
+                max={totalPages}
+                value={goToPageInput} 
+                onChange={(e) => setGoToPageInput(e.target.value)} 
+                placeholder="Page #" 
+                className="w-full border border-[#5cb85c] rounded px-3 py-1.5 text-sm bg-white focus:outline-none focus:border-[#5cb85c] focus:ring-1 focus:ring-[#5cb85c]/50 transition-all" 
+              />
+              <button type="submit" className="bg-gray-100 border border-gray-300 hover:bg-gray-200 text-gray-700 font-medium py-1.5 px-3 rounded text-sm transition-colors">
+                Go
+              </button>
+            </form>
+          </div>
         </div>
 
         {/* Actions */}
         <div className="flex items-end justify-center gap-6 mb-6 shrink-0">
           <div className="flex items-center gap-2 mb-1">
-            <input type="checkbox" id="concerned" className="w-4 h-4 rounded border-gray-300 text-[#5cb85c] focus:ring-[#5cb85c] accent-[#5cb85c]" />
+            <input type="checkbox" id="concerned" checked={concernedItems} onChange={(e) => setConcernedItems(e.target.checked)} className="w-4 h-4 rounded border-gray-300 text-[#5cb85c] focus:ring-[#5cb85c] accent-[#5cb85c]" />
             <label htmlFor="concerned" className="text-sm font-medium text-gray-700">Concerned Items</label>
           </div>
           
           <div className="w-[120px]">
             <label className="block text-xs font-medium text-gray-700 mb-1 text-center">Version:</label>
             <CustomDropdown
-              options={['Jul 26', 'Jun 26', 'May 26', 'Apr 26']}
+              options={projectBatches.length > 0 ? projectBatches.map(b => new Date(b.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })) : ['Choose']}
               value={version}
               onChange={setVersion}
               placeholder="Version"
             />
           </div>
           
-          <button className="bg-[#5cb85c] hover:bg-green-600 text-white font-medium py-1.5 px-6 rounded text-sm transition-colors mb-0.5">
+          <button onClick={handleGetRatings} className="bg-[#5cb85c] hover:bg-green-600 text-white font-medium py-1.5 px-6 rounded text-sm transition-colors mb-0.5">
             Get Ratings
           </button>
           
-          <button className="flex items-center gap-2 border-2 border-[#5cb85c] text-[#5cb85c] hover:bg-green-50 font-medium py-1.5 px-4 rounded text-sm transition-colors mb-0.5">
+          <button onClick={handleExportCSV} className="flex items-center gap-2 border-2 border-[#5cb85c] text-[#5cb85c] hover:bg-green-50 font-medium py-1.5 px-4 rounded text-sm transition-colors mb-0.5">
             <MdOutlineFileDownload className="text-lg" />
             Generate CSV
           </button>
@@ -249,49 +350,50 @@ const RoadSummaryPage = () => {
           <table className="w-full text-sm text-left">
             <thead className="text-xs text-[#5cb85c] uppercase bg-green-50/50 sticky top-0 border-b border-[#5cb85c]/40">
               <tr>
-                <th className="px-4 py-3 font-medium text-center">STATUS</th>
-                <th className="px-4 py-3 font-medium">TYPE OF WORK</th>
-                {selectedCategory === 'Structures' && <th className="px-4 py-3 font-medium">ASSET ID</th>}
+                <th className="px-4 py-3 font-medium">ASSET ID</th>
+                <th className="px-4 py-3 font-medium">PROJECT</th>
                 <th className="px-4 py-3 font-medium">CATEGORY</th>
-                {selectedCategory === 'TMS' ? (
-                  <th className="px-4 py-3 font-medium">LANE TYPE</th>
-                ) : (
-                  <th className="px-4 py-3 font-medium">ASSET TYPE</th>
-                )}
-                {(selectedCategory === 'Structures' || selectedCategory === 'TMS' || selectedCategory === 'Landscaping') && <th className="px-4 py-3 font-medium">SUB CATEGORY</th>}
-                <th className="px-4 py-3 font-medium">DIRECTION</th>
-                {selectedCategory !== 'Structures' && <th className="px-4 py-3 font-medium">ROAD TYPE</th>}
+                <th className="px-4 py-3 font-medium">ASSET TYPE</th>
                 <th className="px-4 py-3 font-medium">CHAINAGE</th>
-                <th className="px-4 py-3 font-medium">DATE CREATED</th>
-                <th className="px-4 py-3 font-medium">REPORTED BY</th>
+                <th className="px-4 py-3 font-medium">PARAMETERS</th>
+                <th className="px-4 py-3 font-medium text-center">STATUS</th>
+                <th className="px-4 py-3 font-medium">CREATED</th>
               </tr>
             </thead>
             <tbody>
-              {currentData.map((row, index) => (
+              {loading ? (
+                <tr><td colSpan="8" className="text-center py-8">Loading...</td></tr>
+              ) : currentItems.map((q, index) => {
+                return (
                 <tr 
                   key={index} 
-                  onClick={() => navigate(`/rating/${roadId || 'roadway'}/detail/${index}`, { state: row })}
+                  onClick={() => {
+                    if (!activeBatchId) {
+                      alert('No active inspection batch found for this project.');
+                      return;
+                    }
+                    if (q.taskGlobalIndex === -1) {
+                      alert('This asset is not part of the current active inspection batch.');
+                      return;
+                    }
+                    navigate(`/rating/inspector/${activeBatchId}?startIndex=${q.taskGlobalIndex}`);
+                  }}
                   className={`border-b border-[#5cb85c]/20 hover:bg-green-50/50 cursor-pointer ${index % 2 === 0 ? 'bg-white' : 'bg-[#5cb85c]/[0.02]'}`}
                 >
+                  <td className="px-4 py-3 text-gray-900 font-medium">{q.assetId}</td>
+                  <td className="px-4 py-3 text-gray-600">{q.project}</td>
+                  <td className="px-4 py-3 text-gray-600">{q.category}</td>
+                  <td className="px-4 py-3 text-gray-600">{q.assetType}</td>
+                  <td className="px-4 py-3 text-gray-600">{q.chainage}</td>
+                  <td className="px-4 py-3 text-gray-600">{q.parameterCount} Params</td>
                   <td className="px-4 py-3 text-center">
-                    <MdClear className="text-red-500 text-lg mx-auto" />
+                    <span className={`px-2.5 py-1 text-xs font-medium rounded ${q.status === 'COMPLETED' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
+                      {q.status}
+                    </span>
                   </td>
-                  <td className="px-4 py-3 text-gray-600">{row.typeOfWork}</td>
-                  {selectedCategory === 'Structures' && <td className="px-4 py-3 text-gray-600">{row.assetId}</td>}
-                  <td className="px-4 py-3 text-gray-600">{row.category}</td>
-                  {selectedCategory === 'TMS' ? (
-                    <td className="px-4 py-3 text-gray-600">{row.laneType}</td>
-                  ) : (
-                    <td className="px-4 py-3 text-gray-600">{row.assetType}</td>
-                  )}
-                  {(selectedCategory === 'Structures' || selectedCategory === 'TMS' || selectedCategory === 'Landscaping') && <td className="px-4 py-3 text-gray-600">{row.subCategory}</td>}
-                  <td className="px-4 py-3 text-gray-600">{row.direction}</td>
-                  {selectedCategory !== 'Structures' && <td className="px-4 py-3 text-gray-600">{row.roadType}</td>}
-                  <td className="px-4 py-3 text-gray-600">{row.chainage}</td>
-                  <td className="px-4 py-3 text-gray-600">{row.date}</td>
-                  <td className="px-4 py-3 text-gray-600">{row.reporter}</td>
+                  <td className="px-4 py-3 text-gray-600">{new Date(q.createdAt).toLocaleDateString('en-GB')}</td>
                 </tr>
-              ))}
+              )})}
             </tbody>
           </table>
         </div>
@@ -313,3 +415,4 @@ const RoadSummaryPage = () => {
 };
 
 export default RoadSummaryPage;
+

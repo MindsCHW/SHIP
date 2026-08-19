@@ -7,9 +7,9 @@ export default {
   theme: {
     extend: {
       colors: {
-        primary: "#0D6EFD",
+        primary: "#5cb85c",
         sidebar: {
-          active: "#0056B3"
+          active: "#4cae4c"
         },
         pageBg: "#F5F7FA",
         cardBg: "#FFFFFF",

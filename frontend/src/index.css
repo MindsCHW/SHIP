@@ -46,13 +46,21 @@
     background: transparent;
   }
   .custom-dropdown-scrollbar::-webkit-scrollbar-thumb {
-    @apply bg-gray-300 rounded-full;
+    @apply bg-[#5cb85c]/60 rounded-full;
   }
   .custom-dropdown-scrollbar::-webkit-scrollbar-thumb:hover {
-    @apply bg-gray-400;
+    @apply bg-[#5cb85c]/80;
   }
   .custom-dropdown-scrollbar {
     scrollbar-width: thin;
-    scrollbar-color: #d1d5db transparent;
+    scrollbar-color: #5cb85c transparent;
+  }
+
+  /* Remove default focus outline from Recharts */
+  .recharts-wrapper, 
+  .recharts-surface, 
+  .recharts-sector,
+  .recharts-responsive-container {
+    outline: none !important;
   }
 }

@@ -4,6 +4,7 @@ import Navbar from './../Navbar';
 import Sidebar from './../Sidebar';
 import CloneImageCarousel from './CloneImageCarousel';
 import CustomDropdown from './../common/CustomDropdown';
+import { resolveRemarkRating } from '../../utils/remarkRatingResolver';
 import { 
   MdUndo, MdEdit, MdMap, MdTerrain, MdArrowForward, 
   MdEditRoad, MdVerticalAlignBottom, MdGpsFixed,
@@ -18,6 +19,14 @@ const CloneRatingPage = ({ rowData = {}, config }) => {
   const [isLargeScreen, setIsLargeScreen] = useState(false);
   const [pageActiveImages, setPageActiveImages] = useState({});
   const [expandedCard, setExpandedCard] = useState(null);
+  const [remarkMasterConfig, setRemarkMasterConfig] = useState({});
+
+  useEffect(() => {
+    fetch('/remarkMaster.json')
+      .then(res => res.json())
+      .then(data => setRemarkMasterConfig(data))
+      .catch(err => console.error('Failed to load remarkMaster.json', err));
+  }, []);
 
   const [globalReviewData, setGlobalReviewData] = useState({});
 
@@ -26,7 +35,7 @@ const CloneRatingPage = ({ rowData = {}, config }) => {
   const images = currentPage.images;
 
   const storedIndex = pageActiveImages[currentPageIndex];
-  const activeImageIndex = Math.max(0, Math.min(storedIndex ?? 0, images.length - 1));
+  const activeImageIndex = Math.max(0, Math.min(storedIndex ?? 1, images.length - 1));
 
   const handleImageIndexChange = (newIndex) => {
     setPageActiveImages(prev => ({
@@ -80,24 +89,19 @@ const CloneRatingPage = ({ rowData = {}, config }) => {
   };
 
   const getCurrentData = () => {
-    const pageData = globalReviewData[currentPageIndex] || {};
-    return pageData[activeImageIndex] || getInitialState();
+    return globalReviewData[currentPageIndex] || getInitialState();
   };
 
   const updateCurrentData = (field, updater) => {
     setGlobalReviewData(prev => {
-      const pageData = prev[currentPageIndex] || {};
-      const current = pageData[activeImageIndex] || getInitialState();
+      const current = prev[currentPageIndex] || getInitialState();
       
       const currentValue = current[field];
       const nextValue = typeof updater === 'function' ? updater(currentValue) : updater;
       
       return {
         ...prev,
-        [currentPageIndex]: {
-          ...pageData,
-          [activeImageIndex]: { ...current, [field]: nextValue }
-        }
+        [currentPageIndex]: { ...current, [field]: nextValue }
       };
     });
   };
@@ -116,7 +120,9 @@ const CloneRatingPage = ({ rowData = {}, config }) => {
   const remarks = currentData.remarks;
   const headerRemarks = currentData.headerRemarks;
 
-  const remarkOptions = ['Due to crack', 'Due to rutting', 'Due to pothole'];
+  const currentCategory = currentSlideConfig.overrides.category || rowData.category || 'N/A';
+  const categoryRemarks = remarkMasterConfig[currentCategory] || [];
+  const remarkOptions = [...categoryRemarks, 'Other'];
 
   const toggleEditMode = () => {
     setIsEditMode(!isEditMode);
@@ -277,6 +283,8 @@ const CloneRatingPage = ({ rowData = {}, config }) => {
                                   value={val}
                                   checked={ratings[key] === val}
                                   onChange={(e) => setRatings(prev => ({ ...prev, [key]: e.target.value }))}
+                                  onKeyDown={(e) => e.preventDefault()}
+                                  onClick={(e) => e.target.blur()}
                                   className={`w-5 h-5 border-gray-300 ${colorClass} cursor-pointer`} 
                                 />
                                 <span className="text-base font-semibold text-gray-600 group-hover:text-gray-900">{val}</span>
@@ -288,7 +296,23 @@ const CloneRatingPage = ({ rowData = {}, config }) => {
                           <CustomDropdown 
                             options={remarkOptions}
                             value={remarks[key]}
-                            onChange={(val) => setRemarks(prev => ({ ...prev, [key]: val }))}
+                            onChange={(val) => {
+                              setGlobalReviewData(prevGlobal => {
+                                const current = prevGlobal[currentPageIndex] || getInitialState();
+                                const newRemarks = { ...current.remarks, [key]: val };
+                                const newRatings = { ...current.ratings };
+                                
+                                const resolvedRating = resolveRemarkRating(currentCategory, val);
+                                if (resolvedRating !== null) {
+                                  newRatings[key] = resolvedRating;
+                                }
+                                
+                                return {
+                                  ...prevGlobal,
+                                  [currentPageIndex]: { ...current, remarks: newRemarks, ratings: newRatings }
+                                };
+                              });
+                            }}
                             placeholder="Remark"
                             direction="up"
                           />

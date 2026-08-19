@@ -121,7 +121,7 @@ const CustomDropdown = ({
             className={`absolute z-[100] w-full ${isUp ? 'bottom-full mb-1.5' : 'mt-1.5'} bg-white border border-gray-100 rounded-xl shadow-[0_10px_30px_rgba(0,0,0,0.12)] overflow-hidden`}
           >
             <ul 
-              className="max-h-60 overflow-y-auto py-1 custom-dropdown-scrollbar focus:outline-none"
+              className="max-h-60 overflow-y-auto py-1 custom-dropdown-scrollbar focus:outline-none overscroll-contain"
               role="listbox"
             >
               {formattedOptions.length === 0 ? (

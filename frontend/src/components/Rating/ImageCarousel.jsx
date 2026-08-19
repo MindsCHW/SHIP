@@ -3,8 +3,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { MdFullscreen, MdClose, MdZoomIn, MdZoomOut, MdRotateRight, MdRotateLeft, MdChevronLeft, MdChevronRight } from 'react-icons/md';
 import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch';
 
-const ImageCarousel = ({ images = [], activeIndex, onIndexChange, isEditMode = false, onEscape }) => {
-  const currentIndex = activeIndex !== undefined ? activeIndex : Math.max(0, Math.min(1, images.length - 1));
+const ImageCarousel = ({ images = [], activeIndex = 1, onIndexChange, isEditMode = false, baseChainage, onEscape }) => {
+  const currentIndex = activeIndex;
   const [fullScreenIndex, setFullScreenIndex] = useState(null);
   
   // Fullscreen specific states
@@ -146,19 +146,20 @@ const ImageCarousel = ({ images = [], activeIndex, onIndexChange, isEditMode = f
                   transition={{ duration: 0.45, ease: "easeOut" }}
                   className="absolute w-[85%] sm:w-[65%] md:w-[60%] aspect-video bg-white rounded-[24px] border border-gray-200 shadow-[0_16px_50px_rgba(0,0,0,0.12)] group"
                 >
+                  {/* Chainage Display Above Image */}
+                  <div className="absolute -top-10 left-1/2 -translate-x-1/2 text-gray-800 font-bold text-lg whitespace-nowrap z-50 transition-opacity">
+                    {img.chainage || ''}
+                  </div>
+
                   <div 
                     className="w-full h-full overflow-hidden rounded-[24px] cursor-pointer relative"
                     onClick={() => {
-                      if (distance < 0) prevImage();
-                      else if (distance > 0) nextImage();
-                      else {
-                        setFullScreenIndex(index);
-                        setRotation(0);
-                      }
+                      setFullScreenIndex(index);
+                      setRotation(0);
                     }}
                   >
                     <motion.img 
-                      src={img} 
+                      src={img.url || img} 
                       alt={`Road view ${index + 1}`} 
                       className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.03]"
                       draggable={false}
@@ -190,7 +191,7 @@ const ImageCarousel = ({ images = [], activeIndex, onIndexChange, isEditMode = f
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/95 backdrop-blur-sm"
+            className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/95 backdrop-blur-sm"
           >
             <TransformWrapper
               key={fullScreenIndex}
@@ -204,7 +205,7 @@ const ImageCarousel = ({ images = [], activeIndex, onIndexChange, isEditMode = f
               {({ zoomIn, zoomOut, resetTransform }) => (
                 <>
                   {/* Top Right Controls */}
-                  <div className="absolute top-6 right-6 z-50 flex flex-col gap-3">
+                  <div className="absolute top-12 right-6 z-50 flex flex-col gap-3">
                     <button 
                       onClick={(e) => { e.stopPropagation(); zoomIn(0.1); }}
                       className="w-12 h-12 bg-[#4CAF50] text-white rounded-full flex items-center justify-center shadow-lg hover:bg-[#45a049] hover:scale-105 transition-all text-2xl"
@@ -250,7 +251,7 @@ const ImageCarousel = ({ images = [], activeIndex, onIndexChange, isEditMode = f
                     <TransformComponent wrapperStyle={{ width: "100%", height: "100%" }} contentStyle={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}>
                       <motion.img
                         key={`fs-${fullScreenIndex}`}
-                        src={images[fullScreenIndex]}
+                        src={images[fullScreenIndex]?.url || images[fullScreenIndex]}
                         initial={{ opacity: 0, scale: 0.9 }}
                         animate={{ 
                           opacity: 1, 

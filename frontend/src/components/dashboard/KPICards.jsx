@@ -10,49 +10,6 @@ const sparklineData1 = [{v: 10},{v: 15},{v: 13},{v: 18},{v: 25},{v: 22},{v: 30}]
 const sparklineData2 = [{v: 30},{v: 25},{v: 35},{v: 28},{v: 40},{v: 45},{v: 50}];
 const sparklineData3 = [{v: 50},{v: 45},{v: 30},{v: 20},{v: 15},{v: 10},{v: 5}]; // going down
 
-const kpiData = [
-  { 
-    title: 'Total Roads', value: '16', trend: '+12%', isPositive: true, 
-    icon: <MdMap className="text-blue-500" />, bg: 'bg-blue-50', 
-    sparkline: sparklineData1, color: '#3b82f6'
-  },
-  { 
-    title: 'Total Ratings', value: '124,592', trend: '+5.4%', isPositive: true, 
-    icon: <MdStarRate className="text-indigo-500" />, bg: 'bg-indigo-50', 
-    sparkline: sparklineData2, color: '#6366f1'
-  },
-  { 
-    title: 'Completed Ratings', value: '108,201', trend: '+8.2%', isPositive: true, 
-    icon: <MdCheckCircle className="text-green-500" />, bg: 'bg-green-50', 
-    sparkline: sparklineData2, color: '#22c55e'
-  },
-  { 
-    title: 'Pending Ratings', value: '16,391', trend: '-2.1%', isPositive: true, 
-    icon: <MdPendingActions className="text-orange-500" />, bg: 'bg-orange-50', 
-    sparkline: sparklineData3, color: '#f97316'
-  },
-  { 
-    title: 'Critical Issues', value: '342', trend: '+1.5%', isPositive: false, 
-    icon: <MdWarning className="text-red-500" />, bg: 'bg-red-50', 
-    sparkline: sparklineData1, color: '#ef4444'
-  },
-  { 
-    title: 'Avg Health Score', value: '78.4', trend: '+4.3%', isPositive: true, 
-    icon: <MdHealthAndSafety className="text-teal-500" />, bg: 'bg-teal-50', 
-    sparkline: sparklineData2, color: '#14b8a6'
-  },
-  { 
-    title: 'Monthly Progress', value: '92%', trend: '+12%', isPositive: true, 
-    icon: <MdTrendingUp className="text-purple-500" />, bg: 'bg-purple-50', 
-    sparkline: sparklineData1, color: '#a855f7'
-  },
-  { 
-    title: 'Last Updated', value: 'Just Now', trend: 'Live', isPositive: true, 
-    icon: <MdUpdate className="text-gray-500" />, bg: 'bg-gray-50', 
-    sparkline: sparklineData1, color: '#6b7280'
-  },
-];
-
 const KPICard = ({ item, index }) => {
   return (
     <motion.div
@@ -92,7 +49,62 @@ const KPICard = ({ item, index }) => {
   );
 };
 
-const KPICards = () => {
+const KPICards = ({ selectedProject }) => {
+  const [data, setData] = React.useState(null);
+
+  React.useEffect(() => {
+    if (selectedProject) {
+      import('../../services/dashboard.service').then(({ dashboardService }) => {
+        dashboardService.getProjectKPIs(selectedProject).then(setData).catch(console.error);
+      });
+    }
+  }, [selectedProject]);
+
+  if (!data) return null;
+
+  const kpiData = [
+    { 
+      title: 'Total Roads', value: data.totalRoads || 0, trend: 'N/A', isPositive: true, 
+      icon: <MdMap className="text-blue-500" />, bg: 'bg-blue-50', 
+      sparkline: data.sparklines?.totalRatings || sparklineData1, color: '#3b82f6'
+    },
+    { 
+      title: 'Total Inspections', value: data.totalRatings || 0, trend: 'Live', isPositive: true, 
+      icon: <MdStarRate className="text-indigo-500" />, bg: 'bg-indigo-50', 
+      sparkline: data.sparklines?.totalRatings || sparklineData2, color: '#6366f1'
+    },
+    { 
+      title: 'Completed Inspections', value: data.completedRatings || 0, trend: 'Live', isPositive: true, 
+      icon: <MdCheckCircle className="text-green-500" />, bg: 'bg-green-50', 
+      sparkline: data.sparklines?.completedRatings || sparklineData2, color: '#22c55e'
+    },
+    { 
+      title: 'Pending Inspections', value: data.pendingRatings || 0, trend: 'Live', isPositive: true, 
+      icon: <MdPendingActions className="text-orange-500" />, bg: 'bg-orange-50', 
+      sparkline: data.sparklines?.pendingRatings || sparklineData3, color: '#f97316'
+    },
+    { 
+      title: 'Critical Issues', value: data.criticalIssues || 0, trend: 'Alert', isPositive: false, 
+      icon: <MdWarning className="text-red-500" />, bg: 'bg-red-50', 
+      sparkline: data.sparklines?.criticalIssues || sparklineData1, color: '#ef4444'
+    },
+    { 
+      title: 'Perfect 10 Ratings', value: `${data.perfect10Percentage || 0}%`, trend: 'Live', isPositive: true, 
+      icon: <MdHealthAndSafety className="text-teal-500" />, bg: 'bg-teal-50', 
+      sparkline: data.sparklines?.avgHealthScore || sparklineData2, color: '#14b8a6'
+    },
+    { 
+      title: 'Monthly Progress', value: `${data.monthlyProgress || 0}%`, trend: 'Live', isPositive: true, 
+      icon: <MdTrendingUp className="text-purple-500" />, bg: 'bg-purple-50', 
+      sparkline: data.sparklines?.monthlyProgress || sparklineData1, color: '#a855f7'
+    },
+    { 
+      title: 'Last Updated', value: data.lastUpdated ? new Date(data.lastUpdated).toLocaleDateString() : 'N/A', trend: 'Live', isPositive: true, 
+      icon: <MdUpdate className="text-gray-500" />, bg: 'bg-gray-50', 
+      sparkline: data.sparklines?.totalRatings || sparklineData1, color: '#6b7280'
+    },
+  ];
+
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-6">
       {kpiData.map((item, index) => (

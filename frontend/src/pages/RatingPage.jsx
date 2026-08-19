@@ -10,6 +10,9 @@ import SearchBar from '../components/Rating/SearchBar';
 import CompactRoadCard from '../components/Rating/CompactRoadCard';
 import HoverPopup from '../components/Rating/HoverPopup';
 import EmptyState from '../components/Rating/EmptyState';
+import { ratingService } from '../services/rating.service';
+import { projectService } from '../services/project.service';
+import { useAuth } from '../hooks/useAuth';
 
 const RoadIcon = ({ className }) => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" className={className}>
@@ -51,57 +54,87 @@ const BarrierIcon = ({ className }) => (
   </svg>
 );
 
-const dummyData = [
-  // Page 1 matches Image 2
-  { roadName: 'APEL', roadFullName: 'SPV Name : Andhra Pradesh Expressway Limited (APEL)', status: 'ON-GOING', dateCreated: '23-Aug-23, 2:08:02 PM', reportedBy: 'Swaraj' },
-  { roadName: 'DATL', roadFullName: 'SPV Name : Delhi Agra Tollway Limited (DATL)', status: 'HO-RATED', dateCreated: '23-Aug-23, 2:08:02 PM', reportedBy: 'Swaraj' },
-  { roadName: 'FRHL', roadFullName: 'SPV Name : Farakka-Raiganj Highways Ltd(FRHL)', status: 'HO-PROCESS', dateCreated: '23-Aug-23, 2:08:02 PM', reportedBy: 'Swaraj' },
-  { roadName: 'JMTPL', roadFullName: 'SPV Name : Jaipur-Mahua Tollway Private Limited (JMTPL)', status: 'SPV-RATED', dateCreated: '23-Aug-23, 2:08:02 PM', reportedBy: 'Swaraj' },
-  { roadName: 'KETPL', roadFullName: 'SPV Name : Kanyakumari-Etturavattam Tollway Private Limited (KETPL)', status: 'ON-GOING', dateCreated: '23-Aug-23, 2:08:02 PM', reportedBy: 'Swaraj' },
-  { roadName: 'KMTPL', roadFullName: 'SPV Name : Kotwa-Muzaffarpur Tollway Private Limited (KMTPL)', status: 'HO-RATED', dateCreated: '23-Aug-23, 2:08:02 PM', reportedBy: 'Swaraj' },
-  { roadName: 'MBEL', roadFullName: 'SPV Name : Mahua Bharatpur Expressway Limited (MBEL)', status: 'HO-PROCESS', dateCreated: '23-Aug-23, 2:08:02 PM', reportedBy: 'Swaraj' },
-  { roadName: 'MKTPL', roadFullName: 'SPV Name : Madurai-Kanyakumari Tollway Private Limited (MKTPL)', status: 'SPV-RATED', dateCreated: '23-Aug-23, 2:08:02 PM', reportedBy: 'Swaraj' },
-  { roadName: 'NAM', roadFullName: 'SPV Name : N A M Expressway Limited (NAMEL)', status: 'ON-GOING', dateCreated: '23-Aug-23, 2:08:02 PM', reportedBy: 'Swaraj' },
-  { roadName: 'NDEPL', roadFullName: 'SPV Name : Nelamangla Devihalli Expressway Private Limited (NDEPL)', status: 'HO-RATED', dateCreated: '23-Aug-23, 2:08:02 PM', reportedBy: 'Swaraj' },
-  // Page 2 matches Image 1
-  { roadName: 'NKTPL', roadFullName: 'SPV Name : Nanguneri-Kanyakumari Tollway Private Limited (NKTPL)', status: 'HO-PROCESS', dateCreated: '23-Aug-23, 2:08:02 PM', reportedBy: 'Swaraj' },
-  { roadName: 'SMTPL', roadFullName: 'SPV Name : Salaipudhur-Madurai Tollway Private Limited (SMTPL)', status: 'SPV-RATED', dateCreated: '23-Aug-23, 2:08:02 PM', reportedBy: 'Swaraj' },
-  { roadName: 'WUPTL', roadFullName: 'SPV Name : Western UP Tollway Limited (WUPTL)', status: 'HO-RATED', dateCreated: '23-Aug-23, 2:08:02 PM', reportedBy: 'Swaraj' },
-  { roadName: 'WVEL', roadFullName: 'SPV Name : KNR Walayar Tollways Pvt Ltd(WVEL)', status: 'ON-GOING', dateCreated: '23-Aug-23, 2:08:02 PM', reportedBy: 'Swaraj' },
-  { roadName: 'KTIPL', roadFullName: 'SPV Name : KNR Tirumala Infra Private Limited(KTIPL)', status: 'HO-RATED', dateCreated: '23-Aug-23, 2:08:02 PM', reportedBy: 'Swaraj' },
-  { roadName: 'SPPL', roadFullName: 'SPV Name : KNR Shankarampet Projects Private Limited(SPPL)', status: 'HO-PROCESS', dateCreated: '23-Aug-23, 2:08:02 PM', reportedBy: 'Swaraj' },
-  { roadName: 'MSHP', roadFullName: 'SPV Name : DBL Mangalwedha Solapur Highways Private Limited(MSHP)', status: 'SPV-RATED', dateCreated: '23-Aug-23, 2:08:02 PM', reportedBy: 'Swaraj' },
-  { roadName: 'MHPL', roadFullName: 'SPV Name : DBL Mangloor Highways Private Limited(MHPL)', status: 'ON-GOING', dateCreated: '23-Aug-23, 2:08:02 PM', reportedBy: 'Swaraj' },
-  { roadName: 'BWHPL', roadFullName: 'SPV Name : DBL Borgaon Watambare Highways Private Limited(BWHPL)', status: 'HO-PROCESS', dateCreated: '23-Aug-23, 2:08:02 PM', reportedBy: 'Swaraj' },
-  { roadName: 'GAEPL', roadFullName: 'SPV Name : Ghaziabad Aligarh Expressway Private Limited(GAEPL)', status: 'SPV-RATED', dateCreated: '23-Aug-23, 2:08:02 PM', reportedBy: 'Swaraj' },
-  // Page 3 matches Image 3
-  { roadName: 'SIPL', roadFullName: 'SPV Name : KNR Srirangam Infra Private Limited(SIPL)', status: 'HO-RATED', dateCreated: '23-Aug-23, 2:08:02 PM', reportedBy: 'Swaraj' },
-  { roadName: 'BFHL', roadFullName: 'SPV Name : Baharampore Farakka Highways Limited(BFHL)', status: 'HO-PROCESS', dateCreated: '23-Aug-23, 2:08:02 PM', reportedBy: 'Swaraj' },
-  { roadName: 'KHEPL', roadFullName: 'SPV Name : Kokhraj Handia Expressway Pvt Ltd (KHEPL)', status: 'ON-GOING', dateCreated: '07-Apr-26, 3:35:52 PM', reportedBy: 'Swaraj' },
-  { roadName: 'WMPTL', roadFullName: 'SPV Name : Western MP Infrastructure & Toll Roads Pvt Ltd (WMPTL)', status: 'HO-RATED', dateCreated: '07-Apr-26, 3:35:52 PM', reportedBy: 'Swaraj' },
-  { roadName: 'DHMEPL', roadFullName: 'SPV Name : Delhi Hapur Meerut Expressway Private Limited(DHMEPL)', status: 'SPV-RATED', dateCreated: '07-Apr-26, 3:35:52 PM', reportedBy: 'Swaraj' },
-  { roadName: 'ADTPL', roadFullName: 'SPV Name : Devanahalli Tollway Private Limited (DTPL)', status: 'HO-PROCESS', dateCreated: '07-Apr-26, 3:35:52 PM', reportedBy: 'Swaraj' },
-  { roadName: 'JUHPL', roadFullName: 'SPV Name : Jammu Udhampur Highway Private limited (JUHPL)', status: 'HO-RATED', dateCreated: '07-Apr-26, 3:35:52 PM', reportedBy: 'Swaraj' }
-];
+// Removed dummyData
 
 const filters = [
   { id: 'all', label: 'All Roads' },
-  { id: 'HO-PROCESS', label: 'HO Process' },
-  { id: 'ON-GOING', label: 'On Going' },
-  { id: 'SPV-RATED', label: 'SPV Rated' },
-  { id: 'HO-RATED', label: 'HO Rated' },
-  { id: 'NOT-RATED', label: 'Not Rated' }
+  { id: 'READY-FOR-RATING', label: 'Ready for Rating' },
+  { id: 'IN-PROGRESS', label: 'In Progress' }
 ];
 
 const RatingPage = () => {
+  const { user } = useAuth();
+  const isAdmin = user && (user.role === 'Admin' || user.role === 'Administrator' || user.role === 'HO' || user.role === 'SPV');
   const [activeFilter, setActiveFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const [projectsData, setProjectsData] = useState([]);
   const navigate = useNavigate();
-  
+
   // Hover state for the rich popup
   const [hoveredData, setHoveredData] = useState(null);
   const [hoverAnchorRect, setHoverAnchorRect] = useState(null);
   const [hoverTimeout, setHoverTimeout] = useState(null);
+
+  useEffect(() => {
+    fetchLiveProjects();
+  }, []);
+
+  const fetchLiveProjects = async () => {
+    try {
+      // Fetch all projects from master list and batches from rating service
+      const [allProjectsRes, batches] = await Promise.all([
+        isAdmin ? projectService.getAllProjects() : Promise.resolve([]),
+        ratingService.getReadyBatches()
+      ]);
+
+      const allProjects = allProjectsRes.data || allProjectsRes || [];
+      const projectMap = {};
+
+      // Initialize map with all projects as NOT-RATED
+      allProjects.forEach(p => {
+        const code = typeof p === 'string' ? p : (p.code || p.name || 'UNKNOWN');
+        if (code === 'UNKNOWN') return;
+        
+        projectMap[code] = {
+          roadName: code,
+          roadFullName: `SPV Name : ${p.fullName || p.name || code}`,
+          status: 'NOT-RATED',
+          dateCreated: p.createdAt ? new Date(p.createdAt).toLocaleString() : 'N/A',
+          reportedBy: 'System'
+        };
+      });
+
+      // Ensure batches is an array
+      const batchesList = Array.isArray(batches) ? batches : (batches?.data || []);
+
+      // Update status based on batches
+      batchesList.forEach(batch => {
+        const pName = batch.project || 'UNKNOWN_BATCH_PROJECT';
+        if (!projectMap[pName]) {
+          // Fallback if project is in batches but not in master list
+          projectMap[pName] = {
+            roadName: pName,
+            roadFullName: `Project: ${pName}`,
+            status: 'NOT-RATED',
+            dateCreated: new Date(batch.createdAt).toLocaleString(),
+            reportedBy: batch.createdBy?.firstName ? `${batch.createdBy.firstName} ${batch.createdBy.lastName}` : 'System'
+          };
+        }
+
+        // Priority: READY-FOR-RATING > IN-PROGRESS > NOT-RATED
+        const currentStatus = projectMap[pName].status;
+        if (batch.status === 'READY_FOR_RATING') {
+          projectMap[pName].status = 'READY-FOR-RATING';
+        } else if (batch.status === 'IN_PROGRESS' && currentStatus !== 'READY-FOR-RATING') {
+          projectMap[pName].status = 'IN-PROGRESS';
+        }
+      });
+
+      setProjectsData(Object.values(projectMap));
+    } catch (err) {
+      console.error('Failed to fetch projects', err);
+    }
+  };
 
   const handleCardHover = (data, rect) => {
     // Add a slight delay so it doesn't flash when moving cursor quickly across grid
@@ -119,7 +152,7 @@ const RatingPage = () => {
     setHoverAnchorRect(null);
   };
 
-  const filteredData = dummyData.filter(road => {
+  const filteredData = projectsData.filter(road => {
     const matchesFilter = activeFilter === 'all' || road.status === activeFilter;
     const matchesSearch = road.roadName.toLowerCase().startsWith(searchQuery.toLowerCase());
     return matchesFilter && matchesSearch;
@@ -128,37 +161,39 @@ const RatingPage = () => {
   const durationBase = 1.0;
   const durationPerVehicle = 0.05;
 
-  const val1 = dummyData.length;
+  const val1 = projectsData.length;
   const dur1 = val1 * durationPerVehicle + durationBase;
   const delay1 = 0;
 
-  const val2 = dummyData.filter(d => d.status === 'HO-RATED').length;
+  const val2 = projectsData.filter(d => d.status === 'READY-FOR-RATING').length;
   const dur2 = val2 * durationPerVehicle + durationBase;
   const delay2 = delay1 + dur1 + 0.15;
 
-  const val3 = dummyData.filter(d => d.status === 'HO-PROCESS').length;
+  const val3 = projectsData.filter(d => d.status === 'IN-PROGRESS').length;
   const dur3 = val3 * durationPerVehicle + durationBase;
   const delay3 = delay2 + dur2 + 0.15;
 
-  const val4 = dummyData.filter(d => d.status === 'SPV-RATED').length;
-  const dur4 = val4 * durationPerVehicle + durationBase;
+  const val4 = 0; // HO Rated (calculated later)
+  const dur4 = durationBase;
   const delay4 = delay3 + dur3 + 0.15;
 
-  const val5 = dummyData.filter(d => d.status === 'ON-GOING').length;
-  const dur5 = val5 * durationPerVehicle + durationBase;
+  const val5 = 0; // SPV Rated (calculated later)
+  const dur5 = durationBase;
   const delay5 = delay4 + dur4 + 0.15;
 
-  const val6 = dummyData.filter(d => d.status === 'HO-PROCESS').length;
+  const val6 = projectsData.filter(d => d.status === 'NOT-RATED').length;
   const dur6 = val6 * durationPerVehicle + durationBase;
   const delay6 = delay5 + dur5 + 0.15;
+
+
 
   return (
     <div className="flex flex-col h-screen overflow-hidden bg-[#F8FAFC]">
       <Navbar />
-      
+
       <div className="flex flex-1 overflow-hidden relative">
         <Sidebar />
-        
+
         {/* Subtle grid background */}
         <div className="absolute inset-0 z-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px] pointer-events-none"></div>
 
@@ -177,15 +212,15 @@ const RatingPage = () => {
 
         <div className="flex-1 overflow-y-auto p-8 pt-6 relative scroll-smooth">
           <div className="max-w-[1800px] mx-auto w-full">
-            
+
             {/* Quick Stats Section */}
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
-              <StatCard title="Total Roads" value={val1} icon={RoadIcon} colorClass="bg-blue-500" delay={delay1} duration={dur1} />
-              <StatCard title="HO Rated" value={val2} icon={ClipboardCheckIcon} colorClass="bg-green-500" delay={delay2} duration={dur2} />
-              <StatCard title="Pending" value={val3} icon={HourglassIcon} colorClass="bg-orange-500" delay={delay3} duration={dur3} />
-              <StatCard title="SPV Rated" value={val4} icon={StarIcon} colorClass="bg-indigo-500" delay={delay4} duration={dur4} />
-              <StatCard title="In Progress" value={val5} icon={BarrierIcon} colorClass="bg-purple-500" delay={delay5} duration={dur5} />
-              <StatCard title="HO Process" value={val6} icon={HourglassIcon} colorClass="bg-teal-500" delay={delay6} duration={dur6} />
+              <StatCard title="Total Projects" value={val1} icon={RoadIcon} colorClass="bg-blue-500" delay={delay1} duration={dur1} />
+              <StatCard title="Ready for Rating" value={val2} icon={ClipboardCheckIcon} colorClass="bg-green-500" delay={delay2} duration={dur2} />
+              <StatCard title="In Progress" value={val3} icon={HourglassIcon} colorClass="bg-orange-500" delay={delay3} duration={dur3} />
+              <StatCard title="HO Rated" value={val4} icon={StarIcon} colorClass="bg-indigo-500" delay={delay4} duration={dur4} />
+              <StatCard title="SPV Rated" value={val5} icon={BarrierIcon} colorClass="bg-purple-500" delay={delay5} duration={dur5} />
+              <StatCard title="Not Rated" value={val6} icon={HourglassIcon} colorClass="bg-teal-500" delay={delay6} duration={dur6} />
             </div>
 
             {/* Controls Bar */}
@@ -196,7 +231,7 @@ const RatingPage = () => {
 
             {/* High Density Cards Grid */}
             {filteredData.length > 0 ? (
-              <motion.div 
+              <motion.div
                 className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-5 gap-5 pb-20"
                 initial="hidden"
                 animate="visible"
@@ -216,8 +251,8 @@ const RatingPage = () => {
                       exit={{ opacity: 0, scale: 0.9, transition: { duration: 0.15 } }}
                       layout
                     >
-                      <CompactRoadCard 
-                        data={road} 
+                      <CompactRoadCard
+                        data={road}
                         onHover={handleCardHover}
                         onLeave={handleCardLeave}
                         onClick={(data) => navigate(`/rating/${data.roadName}`)}
@@ -232,10 +267,10 @@ const RatingPage = () => {
 
           </div>
         </div>
-        
+
         {/* Floating Hover Information Popup */}
         <HoverPopup data={hoveredData} anchorRect={hoverAnchorRect} />
-        
+
       </div>
     </div>
   );

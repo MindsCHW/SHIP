@@ -1,10 +1,12 @@
-import React, { useState, useEffect } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { cn } from '../utils/cn';
-import { MdStarRate, MdPerson, MdChevronLeft, MdChevronRight, MdClose, MdDashboard, MdContentCopy } from 'react-icons/md';
+import { MdStarRate, MdPerson, MdChevronLeft, MdChevronRight, MdClose, MdDashboard, MdContentCopy, MdCheck, MdNotifications, MdGroup, MdList, MdOutlinePrecisionManufacturing, MdOutlineVideoCameraFront, MdImageSearch, MdVideoLibrary, MdInsights, MdAddRoad } from 'react-icons/md';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useAuth } from '../hooks/useAuth';
+import { projectService } from '../services/project.service';
 
-const projectOptions = [
+const fallbackProjects = [
   'ADTPL', 'APEL', 'BFHL', 'BWHPL', 'DATL', 'DHMEPL', 'FRHL', 'GAEPL',
   'JMTPL', 'JUHPL', 'KETPL', 'KHEPL', 'KMTPL', 'KTIPL', 'MBEL', 'MHPL',
   'MKTPL', 'MSHP', 'NAM', 'NDEPL', 'NKTPL', 'SIPL', 'SMTPL', 'SPPL',
@@ -12,17 +14,73 @@ const projectOptions = [
 ];
 
 const Sidebar = () => {
+  const { user } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const selectedProject = searchParams.get('project');
+  const [dynamicProjects, setDynamicProjects] = useState(fallbackProjects);
+
+  useEffect(() => {
+    const fetchProjects = async () => {
+      try {
+        if (user && (user.role === 'Admin' || user.role === 'Administrator')) {
+          const res = await projectService.getAllProjects();
+          const projects = res.data || res || [];
+          const projectNames = projects.map(p => typeof p === 'string' ? p : (p.code || p.name || 'UNKNOWN'))
+                                       .filter(p => p !== 'UNKNOWN');
+          
+          if (projectNames.length > 0) {
+            setDynamicProjects([...new Set(projectNames)].sort());
+          }
+        }
+      } catch (err) {
+        console.error('Failed to fetch projects for sidebar', err);
+      }
+    };
+    fetchProjects();
+  }, [user]);
+
+  const projectOptions = useMemo(() => {
+    if (!user) return dynamicProjects;
+    if (user.role === 'Admin' || user.role === 'Administrator') return dynamicProjects;
+    if (user.roadAssignment) {
+      return user.roadAssignment
+        .split(',')
+        .map(p => p.trim().toUpperCase())
+        .filter(p => p);
+    }
+    return [];
+  }, [user, dynamicProjects]);
+
   
-  // Sidebar collapsed by default on desktop
-  const [isCollapsed, setIsCollapsed] = useState(true);
+  // Sidebar collapsed by default on desktop, but persist user preference
+  const [isCollapsed, setIsCollapsed] = useState(() => {
+    const savedState = localStorage.getItem('hiRateSidebarCollapsed');
+    return savedState !== null ? JSON.parse(savedState) : true;
+  });
+
+  useEffect(() => {
+    localStorage.setItem('hiRateSidebarCollapsed', JSON.stringify(isCollapsed));
+  }, [isCollapsed]);
   
   // Mobile drawer state
   const [isMobileOpen, setIsMobileOpen] = useState(false);
 
   // Dropdown menu state (opened on double click)
   const [openMenu, setOpenMenu] = useState(null);
+  const sidebarRef = useRef(null);
+
+  // Close openMenu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (sidebarRef.current && !sidebarRef.current.contains(event.target)) {
+        setOpenMenu(null);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   useEffect(() => {
     const handler = () => setIsMobileOpen(prev => !prev);
@@ -31,24 +89,74 @@ const Sidebar = () => {
   }, []);
 
   const menuItems = [
-    { name: 'Dashboard', icon: MdDashboard, path: '/dashboard' },
-    { name: 'Rating', icon: MdStarRate, path: '/rating' },
-    { name: 'Role', icon: MdPerson, path: '/role' },
-    { name: 'Clone Page', icon: MdContentCopy, path: '/demo' },
+    { name: 'Dashboard', icon: MdDashboard, path: '/dashboard', allowedRoles: ['Admin', 'Administrator', 'HO', 'SPV', 'User'] },
+    { name: 'Master List', icon: MdList, path: '/master-list', allowedRoles: ['Admin', 'Administrator'] },
+    { name: 'Inspection Engine', icon: MdOutlinePrecisionManufacturing, path: '/inspection-engine', allowedRoles: ['Admin', 'Administrator'] },
+    { name: 'Roadway Sampling', icon: MdAddRoad, path: '/roadway-sampling', allowedRoles: ['Admin', 'Administrator'] },
+    { name: 'Survey Library', icon: MdVideoLibrary, path: '/survey-library', allowedRoles: ['Admin', 'Administrator'] },
+    { name: 'Survey Processing', icon: MdOutlineVideoCameraFront, path: '/survey-processing', allowedRoles: ['Admin', 'Administrator'] },
+    { name: 'Image Review', icon: MdImageSearch, path: '/image-review', allowedRoles: ['Admin', 'Administrator', 'HO'] },
+    { name: 'Rating', icon: MdStarRate, path: '/rating', allowedRoles: ['Admin', 'Administrator', 'HO', 'SPV', 'User'] },
+    { name: 'SHIP', icon: MdInsights, path: '/ship', allowedRoles: ['Admin', 'Administrator', 'HO'] },
+    { name: 'Reports', icon: MdList, path: '/reports', allowedRoles: ['Admin', 'Administrator', 'HO'] },
+    { name: 'Notifications', icon: MdNotifications, path: '/notifications', allowedRoles: ['Admin', 'Administrator', 'HO', 'SPV', 'User'] },
+    { name: 'Users', icon: MdGroup, path: '/users', allowedRoles: ['Admin', 'Administrator'] },
+    { name: 'Role', icon: MdPerson, path: '/role', allowedRoles: ['Admin', 'Administrator'] },
+    { name: 'Clone Page', icon: MdContentCopy, path: '/demo', allowedRoles: ['Admin', 'Administrator'] },
+    { name: 'Profile', icon: MdPerson, path: '/profile', allowedRoles: ['HO', 'SPV', 'User'] },
   ];
+
+  // Helper to get active project from either query param or path
+  const getCurrentProject = () => {
+    const fromQuery = searchParams.get('project');
+    if (fromQuery) return fromQuery.toUpperCase();
+    
+    const pathParts = location.pathname.split('/');
+    if (pathParts.length >= 3 && pathParts[1] === 'rating') {
+      return pathParts[2].toUpperCase();
+    }
+    return null;
+  };
+
+  const activeProject = getCurrentProject();
 
   const handleNav = (path, proj) => {
     if (proj) {
-      navigate(`${path}?project=${proj}`);
+      if (path === '/rating') navigate(`${path}/${proj}`);
+      else navigate(`${path}?project=${proj}`);
     } else {
+      // Always navigate to the root of the tab (home page for that tab)
       navigate(path);
     }
     setIsMobileOpen(false); // Close mobile drawer after navigation
   };
 
+  const clickTimeout = useRef(null);
+
+  const handleSidebarClick = (item) => {
+    const isDashboard = item.name === 'Dashboard';
+    
+    if (isDashboard) {
+      if (clickTimeout.current) {
+        // Double click detected
+        clearTimeout(clickTimeout.current);
+        clickTimeout.current = null;
+        setOpenMenu(prev => prev === item.name ? null : item.name);
+      } else {
+        // First click
+        clickTimeout.current = setTimeout(() => {
+          clickTimeout.current = null;
+          handleNav(item.path);
+        }, 250); // 250ms delay to wait for second click
+      }
+    } else {
+      handleNav(item.path);
+    }
+  };
+
   // The actual Sidebar content component to render for both Desktop and Mobile
   const renderSidebarContent = (isMobile) => (
-    <div className={cn(
+    <div ref={sidebarRef} className={cn(
       "bg-white rounded-[20px] border border-green-500/30 shadow-[0_4px_24px_rgb(0,0,0,0.06)] flex flex-col relative transition-all duration-300",
       isMobile ? "w-64 h-full" : isCollapsed ? "w-[84px] h-[calc(100vh-80px)]" : "w-64 h-[calc(100vh-80px)]"
     )}>
@@ -77,7 +185,7 @@ const Sidebar = () => {
 
       <div className="flex-1 py-6 px-3.5 relative z-50">
         <ul className="flex flex-col gap-3">
-          {menuItems.map((item) => {
+          {menuItems.filter(item => !item.allowedRoles || (user && item.allowedRoles.includes(user.role))).map((item) => {
             const Icon = item.icon;
             const isActive = location.pathname.startsWith(item.path);
             const isDashboard = item.name === 'Dashboard';
@@ -88,13 +196,7 @@ const Sidebar = () => {
                 className="relative"
               >
                 <button
-                  onClick={() => handleNav(item.path)}
-                  onDoubleClick={(e) => {
-                    if (isDashboard) {
-                      e.preventDefault();
-                      setOpenMenu(prev => prev === item.name ? null : item.name);
-                    }
-                  }}
+                  onClick={() => handleSidebarClick(item)}
                   className={cn(
                     "flex w-full items-center gap-3.5 px-3 py-3 rounded-[12px] text-sm font-medium transition-all duration-300 border",
                     isActive 
@@ -136,21 +238,29 @@ const Sidebar = () => {
                           <MdClose className="text-sm" />
                         </button>
                       </div>
-                      <div className="max-h-[300px] overflow-y-auto custom-dropdown-scrollbar py-1.5 flex flex-col">
-                        {projectOptions.map(proj => (
-                          <button 
-                            key={proj} 
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleNav(item.path, proj);
-                              setOpenMenu(null);
-                            }}
-                            className="text-left px-4 py-2 text-sm text-gray-600 hover:text-green-600 hover:bg-green-50/50 transition-colors relative group"
-                          >
-                            <span className="relative z-10">{proj}</span>
-                            <div className="absolute inset-0 bg-green-50 opacity-0 group-hover:opacity-100 transition-opacity" />
-                          </button>
-                        ))}
+                      <div className="max-h-[300px] overflow-y-auto custom-dropdown-scrollbar py-1.5 flex flex-col px-2 gap-1">
+                        {projectOptions.map(proj => {
+                          const isSelected = activeProject === proj;
+                          return (
+                            <button 
+                              key={proj} 
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleNav(item.path, proj);
+                                setOpenMenu(null);
+                              }}
+                              className={cn(
+                                "flex items-center justify-between px-3 py-2 text-sm transition-all duration-200 rounded-md relative group",
+                                isSelected 
+                                  ? "bg-[#5cb85c] text-[#fcefb4] font-medium shadow-sm" 
+                                  : "text-gray-800 hover:text-green-700 hover:bg-green-50 font-medium"
+                              )}
+                            >
+                              <span className="relative z-10">{proj}</span>
+                              {isSelected && <MdCheck className="text-lg text-[#fcefb4]" />}
+                            </button>
+                          );
+                        })}
                       </div>
                     </motion.div>
                   )}
@@ -170,7 +280,7 @@ const Sidebar = () => {
         initial={false}
         animate={{ width: isCollapsed ? 100 : 272 }}
         transition={{ duration: 0.3, ease: "easeInOut" }}
-        className="shrink-0 hidden md:flex items-center justify-center pl-4 pr-1 relative"
+        className="shrink-0 hidden md:flex items-center justify-center pl-4 pr-1 relative z-[999]"
       >
         {renderSidebarContent(false)}
       </motion.div>

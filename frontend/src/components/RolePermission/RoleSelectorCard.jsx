@@ -15,7 +15,7 @@ const RoleSelectorCard = () => {
   ];
 
   return (
-    <div className="bg-cardBg border border-borderColor rounded-lg p-6 shadow-sm mb-6">
+    <div className="bg-cardBg border border-[#5cb85c]/30 rounded-lg p-6 shadow-sm mb-6">
       <div className="relative w-[300px]">
         <CustomDropdown
           options={roleOptions}

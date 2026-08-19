@@ -4,6 +4,7 @@ import Navbar from './../Navbar';
 import Sidebar from './../Sidebar';
 import ImageCarousel from './ImageCarousel';
 import CustomDropdown from './../common/CustomDropdown';
+import { resolveRemarkRating } from '../../utils/remarkRatingResolver';
 import { MdUndo, MdEdit } from 'react-icons/md';
 import { motion, AnimatePresence } from 'framer-motion';
 import leftArrowImg from '../../assets/leftarrow.PNG';
@@ -15,9 +16,17 @@ const GenericRatingPage = ({ rowData = {}, config }) => {
   const [isEditMode, setIsEditMode] = useState(false);
   const [pageActiveImages, setPageActiveImages] = useState({});
   const [expandedCard, setExpandedCard] = useState(null);
+  const [remarkMasterConfig, setRemarkMasterConfig] = useState({});
 
   // Store data per page and per image
   const [globalReviewData, setGlobalReviewData] = useState({});
+
+  useEffect(() => {
+    fetch('/remarkMaster.json')
+      .then(res => res.json())
+      .then(data => setRemarkMasterConfig(data))
+      .catch(err => console.error('Failed to load remarkMaster.json', err));
+  }, []);
 
   const pagesData = config?.pagesData || [];
   const parameters = config?.parameters || [];
@@ -49,24 +58,19 @@ const GenericRatingPage = ({ rowData = {}, config }) => {
   };
 
   const getCurrentData = () => {
-    const pageData = globalReviewData[currentPageIndex] || {};
-    return pageData[activeImageIndex] || getInitialState();
+    return globalReviewData[currentPageIndex] || getInitialState();
   };
 
   const updateCurrentData = (field, updater) => {
     setGlobalReviewData(prev => {
-      const pageData = prev[currentPageIndex] || {};
-      const current = pageData[activeImageIndex] || getInitialState();
+      const current = prev[currentPageIndex] || getInitialState();
       
       const currentValue = current[field];
       const nextValue = typeof updater === 'function' ? updater(currentValue) : updater;
       
       return {
         ...prev,
-        [currentPageIndex]: {
-          ...pageData,
-          [activeImageIndex]: { ...current, [field]: nextValue }
-        }
+        [currentPageIndex]: { ...current, [field]: nextValue }
       };
     });
   };
@@ -85,7 +89,9 @@ const GenericRatingPage = ({ rowData = {}, config }) => {
   const remarks = currentData.remarks;
   const headerRemarks = currentData.headerRemarks;
 
-  const remarkOptions = ['Due to crack', 'Due to rutting', 'Due to pothole'];
+  const currentCategory = currentPage.overrides?.category || rowData.category || 'N/A';
+  const categoryRemarks = remarkMasterConfig[currentCategory] || [];
+  const remarkOptions = [...categoryRemarks, 'Other'];
 
   const toggleEditMode = () => {
     setIsEditMode(!isEditMode);
@@ -196,6 +202,7 @@ const GenericRatingPage = ({ rowData = {}, config }) => {
                   activeIndex={activeImageIndex} 
                   onIndexChange={handleImageIndexChange} 
                   isEditMode={isEditMode}
+                  baseChainage={displayChainage}
                   onEscape={() => navigate(-1)} 
                 />
               </div>
@@ -233,11 +240,41 @@ const GenericRatingPage = ({ rowData = {}, config }) => {
                 const title = param.title;
                 return (
                   <div key={key} className="flex flex-col border border-borderColor p-4 rounded bg-gray-50/30 shadow-sm flex-1">
-                    <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center justify-between mb-3 border-b border-gray-100 pb-2">
                       <h3 className="font-medium text-lg text-gray-800">{title}</h3>
-                      <button onClick={() => handleUndo(key)} className="text-gray-400 hover:text-red-500 transition-colors p-1" aria-label={`Undo ${title} changes`} title="Undo changes">
-                        <MdUndo className="text-lg" />
-                      </button>
+                      <div className="flex items-center gap-4">
+                        <label className="flex items-center gap-1.5 cursor-pointer group">
+                          <input
+                            type="radio"
+                            name={`rectified-${key}`}
+                            value="Rectified"
+                            checked={remarks[key] === 'Rectified'}
+                            onChange={() => {
+                              setRemarks(prev => ({ ...prev, [key]: 'Rectified' }));
+                              setRatings(prev => ({ ...prev, [key]: '10' }));
+                            }}
+                            className="w-4 h-4 text-blue-600 focus:ring-blue-500"
+                          />
+                          <span className="text-sm font-medium text-gray-700">Rectified</span>
+                        </label>
+                        <label className="flex items-center gap-1.5 cursor-pointer group">
+                          <input
+                            type="radio"
+                            name={`rectified-${key}`}
+                            value="Not Rectified"
+                            checked={remarks[key] === 'Not Rectified'}
+                            onChange={() => {
+                              setRemarks(prev => ({ ...prev, [key]: 'Not Rectified' }));
+                              setRatings(prev => ({ ...prev, [key]: '5' }));
+                            }}
+                            className="w-4 h-4 text-blue-600 focus:ring-blue-500"
+                          />
+                          <span className="text-sm font-medium text-gray-700">Not Rectified</span>
+                        </label>
+                        <button onClick={() => handleUndo(key)} className="text-gray-400 hover:text-red-500 transition-colors p-1 ml-1 border-l border-gray-200 pl-3" aria-label={`Undo ${title} changes`} title="Undo changes">
+                          <MdUndo className="text-lg" />
+                        </button>
+                      </div>
                     </div>
                     <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 mt-auto">
                       <div className="flex gap-4 shrink-0">
@@ -255,6 +292,8 @@ const GenericRatingPage = ({ rowData = {}, config }) => {
                                 value={val}
                                 checked={ratings[key] === val}
                                 onChange={(e) => setRatings(prev => ({ ...prev, [key]: e.target.value }))}
+                                onKeyDown={(e) => e.preventDefault()}
+                                onClick={(e) => e.target.blur()}
                                 className={`w-4 h-4 border-gray-300 ${colorClass}`} 
                               />
                               <span className="text-sm font-medium text-gray-700 group-hover:text-gray-900">{val}</span>
@@ -266,7 +305,29 @@ const GenericRatingPage = ({ rowData = {}, config }) => {
                         <CustomDropdown 
                           options={remarkOptions}
                           value={remarks[key]}
-                          onChange={(val) => setRemarks(prev => ({ ...prev, [key]: val }))}
+                          onChange={(val) => {
+                            setGlobalReviewData(prevGlobal => {
+                              const current = prevGlobal[currentPageIndex] || getInitialState();
+                              const newRemarks = { ...current.remarks, [key]: val };
+                              const newRatings = { ...current.ratings };
+                              
+                              if (val && val.toLowerCase() === 'rectified') {
+                                newRatings[key] = '10';
+                              } else if (val && val.toLowerCase() === 'not rectified') {
+                                newRatings[key] = '5';
+                              } else {
+                                const resolvedRating = resolveRemarkRating(currentCategory, val);
+                                if (resolvedRating !== null) {
+                                  newRatings[key] = resolvedRating;
+                                }
+                              }
+                              
+                              return {
+                                ...prevGlobal,
+                                [currentPageIndex]: { ...current, remarks: newRemarks, ratings: newRatings }
+                              };
+                            });
+                          }}
                           placeholder="Remark"
                           direction="up"
                         />

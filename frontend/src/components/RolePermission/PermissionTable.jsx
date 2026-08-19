@@ -7,7 +7,7 @@ const PermissionTable = () => {
 
   return (
     <div className="overflow-x-auto">
-      <table className="w-full min-w-[1000px] border-collapse border border-borderColor">
+      <table className="w-full min-w-[1000px] border-collapse border border-[#5cb85c]/30">
         <PermissionHeader />
         <tbody>
           {rows.map((rowType) => (
