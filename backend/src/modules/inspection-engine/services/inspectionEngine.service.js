@@ -183,7 +183,7 @@ class InspectionEngineService {
     return closest;
   }
 
-  async _calculateRoadwaySampling(project, surveyAssetId, startChainage, endChainage, intervalMetres) {
+  async _calculateRoadwaySampling(project, surveyAssetId, targetChainages) {
     let assets = [];
     if (surveyAssetId === 'all') {
       assets = await SurveyAsset.find({ project, 'vtt.path': { $exists: true, $ne: null } });
@@ -214,16 +214,6 @@ class InspectionEngineService {
     if (availableChainages.length === 0) throw new Error('No chainages found in VTT(s)');
 
     availableChainages.sort((a, b) => a - b);
-
-    // Interval is in metres (e.g., 10). Chainage is usually in km (e.g., 180.00).
-    const interval = intervalMetres / 1000;
-    const minC = Math.min(startChainage, endChainage);
-    const maxC = Math.max(startChainage, endChainage);
-
-    const targetChainages = [];
-    for (let c = minC; c <= maxC; c += interval) {
-      targetChainages.push(parseFloat(c.toFixed(3)));
-    }
 
     const matchedChainages = new Set();
     const sourceSurveyIds = new Map(); // matched chainage (number) -> surveyAssetId
@@ -284,9 +274,6 @@ class InspectionEngineService {
       surveyAssetId,
       surveyName: surveyAssetId === 'all' ? 'All Videos' : assets[0].assetName,
       surveyType: surveyAssetId === 'all' ? 'MIXED' : assets[0].surveyType,
-      startChainage: minC,
-      endChainage: maxC,
-      intervalMetres,
       totalAvailableImages: availableChainages.length,
       matchedImages: matchedCount,
       existingImages: existingCount,
@@ -297,46 +284,107 @@ class InspectionEngineService {
     };
   }
 
+  async _getMergedTargetChainages(project, startChainage, endChainage, intervalMetres) {
+    const minC = Math.min(startChainage, endChainage);
+    const maxC = Math.max(startChainage, endChainage);
+    const interval = intervalMetres / 1000;
+
+    const roadwayChainages = new Set();
+    for (let c = minC; c <= maxC; c += interval) {
+      roadwayChainages.add(parseFloat(c.toFixed(3)));
+    }
+
+    const MasterList = require('../../../models/MasterList.model');
+    // Fetch active RSF questions or any active questions configured for these chainages
+    // The prompt specifies RSF has its own questions from MasterList configuration.
+    // For safety, assuming Category == 'RSF' or 'Road Safety Features'. 
+    // We'll just fetch all active items and filter by chainage range. 
+    // Actually, Roadway is NOT in MasterList, so any MasterList item in this range is technically non-Roadway (e.g. RSF)
+    const activeQuestions = await MasterList.find({ project, status: 'Active' });
+    
+    const rsfQuestions = activeQuestions.filter(q => {
+      // Treat any active MasterList item in this range as RSF (or standard)
+      const c = parseFloat(q.chainage);
+      return !isNaN(c) && c >= minC && c <= maxC;
+    });
+
+    const rsfChainagesMap = new Map(); // chainage -> [questions]
+    
+    for (const q of rsfQuestions) {
+      const c = parseFloat(parseFloat(q.chainage).toFixed(3));
+      if (!rsfChainagesMap.has(c)) {
+        rsfChainagesMap.set(c, []);
+      }
+      rsfChainagesMap.get(c).push(q);
+    }
+
+    const allTargetChainages = Array.from(new Set([...roadwayChainages, ...rsfChainagesMap.keys()])).sort((a, b) => a - b);
+
+    return {
+      allTargetChainages,
+      roadwayChainages,
+      rsfChainagesMap
+    };
+  }
+
   async previewRoadwayBatch(userId, data) {
     const { project, surveyAssetId, startChainage, endChainage, intervalMetres } = data;
     if (!project || !surveyAssetId || startChainage == null || endChainage == null || !intervalMetres) {
       throw new Error('Missing required fields for Roadway preview');
     }
     
-    const samplingData = await this._calculateRoadwaySampling(project, surveyAssetId, startChainage, endChainage, intervalMetres);
+    const { allTargetChainages, roadwayChainages, rsfChainagesMap } = await this._getMergedTargetChainages(project, startChainage, endChainage, intervalMetres);
+    const samplingData = await this._calculateRoadwaySampling(project, surveyAssetId, allTargetChainages);
     
-    // Fixed Roadway Question Configuration: 12 Parameters
     const ROADWAY_PARAMETERS_COUNT = 12;
+    let totalQuestions = 0;
+
+    for (const chainage of samplingData.uniqueMatchedChainages) {
+      const cNum = parseFloat(chainage.toFixed(3));
+      if (roadwayChainages.has(cNum)) {
+        totalQuestions += ROADWAY_PARAMETERS_COUNT;
+      }
+      if (rsfChainagesMap.has(cNum)) {
+        totalQuestions += rsfChainagesMap.get(cNum).length;
+      }
+    }
 
     return {
       ...samplingData,
-      questionsPerImage: ROADWAY_PARAMETERS_COUNT,
-      totalQuestionInstances: samplingData.matchedImages * ROADWAY_PARAMETERS_COUNT
+      startChainage: Math.min(startChainage, endChainage),
+      endChainage: Math.max(startChainage, endChainage),
+      intervalMetres,
+      questionsPerImage: ROADWAY_PARAMETERS_COUNT, // Deprecated conceptually, but kept for UI compat
+      totalQuestionInstances: totalQuestions
     };
   }
 
   async createRoadwayBatch(userId, data) {
     const { project, surveyAssetId, startChainage, endChainage, intervalMetres } = data;
     
-    const samplingData = await this._calculateRoadwaySampling(project, surveyAssetId, startChainage, endChainage, intervalMetres);
+    const { allTargetChainages, roadwayChainages, rsfChainagesMap } = await this._getMergedTargetChainages(project, startChainage, endChainage, intervalMetres);
+    const samplingData = await this._calculateRoadwaySampling(project, surveyAssetId, allTargetChainages);
     
-    // Fixed Roadway Question Configuration: 12 Parameters
     const ROADWAY_PARAMETERS_COUNT = 12;
 
-    const name = `Roadway-${project}-${new Date().toISOString().slice(0, 10)}-${Math.floor(Math.random() * 1000)}`;
+    const name = `Roadway-RSF-${project}-${new Date().toISOString().slice(0, 10)}-${Math.floor(Math.random() * 1000)}`;
     
-    // In continuous sampling, we don't randomly sample. We inspect ALL matched chainages.
-    const selectedQuestionsCount = samplingData.matchedImages * ROADWAY_PARAMETERS_COUNT;
+    let totalQuestions = 0;
+    for (const chainage of samplingData.uniqueMatchedChainages) {
+      const cNum = parseFloat(chainage.toFixed(3));
+      if (roadwayChainages.has(cNum)) totalQuestions += ROADWAY_PARAMETERS_COUNT;
+      if (rsfChainagesMap.has(cNum)) totalQuestions += rsfChainagesMap.get(cNum).length;
+    }
 
     const newBatchData = {
       name,
       project,
-      categories: [],
-      assetTypes: ['Roadway', 'Kerb', 'Shoulder', 'Pavement'],
-      samplingPercentage: 100, // It's 100% of the selected interval
+      categories: [], // Mixed context
+      assetTypes: ['Multi-Asset'], // Using Multi-Asset to indicate Roadway + RSF
+      samplingPercentage: 100,
       samplingStrategy: 'CONTINUOUS',
-      totalMasterQuestions: ROADWAY_PARAMETERS_COUNT,
-      selectedQuestionsCount,
+      totalMasterQuestions: ROADWAY_PARAMETERS_COUNT, // Informational
+      selectedQuestionsCount: totalQuestions,
       uniqueChainagesCount: samplingData.matchedImages,
       status: 'WAITING_FOR_IMAGES',
       createdBy: userId,
@@ -351,24 +399,34 @@ class InspectionEngineService {
     
     for (const chainage of samplingData.uniqueMatchedChainages) {
       const chainageStr = chainage.toFixed(3);
+      const cNum = parseFloat(chainageStr);
       const existingImageUrl = samplingData.existingImageMap[chainageStr];
-      
       const taskStatus = existingImageUrl ? 'READY_FOR_REVIEW' : 'PENDING_IMAGE';
       
       const actualAssetId = samplingData.surveyAssetId === 'all' ? samplingData.sourceSurveyIds.get(chainage) : surveyAssetId;
       const direction = actualAssetId ? assetDirectionMap.get(actualAssetId.toString()) || '-' : '-';
 
+      const isRoadway = roadwayChainages.has(cNum);
+      const rsfParams = rsfChainagesMap.has(cNum) ? rsfChainagesMap.get(cNum) : [];
+      const isRsf = rsfParams.length > 0;
+
+      // Skip if neither (shouldn't happen)
+      if (!isRoadway && !isRsf) continue;
+
+      // Check idempotent creation to prevent duplicate task for this chainage in this batch.
+      // (Actually handled if the batch creation fails or retries, but we do one bulk insert anyway)
+      
       const task = {
         project,
-        category: 'Roadway',
+        category: isRoadway ? 'Roadway' : 'RSF', // Use Roadway if Roadway exists, else RSF
         chainage: chainageStr,
-        assetType: 'Roadway',
+        assetType: 'Multi-Asset', // Avoid storing "Roadway" as assetType
         assetSubType: '',
         direction,
-        roadType: 'Main Carriageway', // Usually continuous is MCW, but we leave it as default or fetch from survey
+        roadType: 'Main Carriageway',
         imageRequirement: samplingData.surveyType || 'DAY',
-        parameters: [], // Empty as we don't use MasterList for Roadway
-        ratings: ROADWAY_PARAMETER_CONFIG,
+        parameters: rsfParams.map(p => p._id), // RSF items
+        ratings: isRoadway ? [...ROADWAY_PARAMETER_CONFIG] : [], // Fixed Roadway parameters
         status: taskStatus,
         extractionDiagnostics: {
           surveyAssetId: actualAssetId
@@ -377,7 +435,6 @@ class InspectionEngineService {
 
       if (existingImageUrl) {
         task.image = { cloudinaryUrl: existingImageUrl };
-        // Wait for user to approve in Image Review before marking as approved
       }
 
       tasksData.push(task);
@@ -385,7 +442,6 @@ class InspectionEngineService {
 
     const batch = await inspectionEngineRepository.createBatch(newBatchData, tasksData);
     
-    // Update batch status if all tasks already have images
     if (samplingData.missingExtractionImages === 0) {
       batch.status = 'READY_FOR_RATING';
       await batch.save();

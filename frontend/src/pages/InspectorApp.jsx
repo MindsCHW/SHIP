@@ -149,7 +149,9 @@ const InspectorApp = () => {
       let ratingsPayload = [];
       if (currentTask.category === 'Roadway') {
         const skippedGroups = new Set((currentTask.skippedAssetTypes || []).map(s => s.assetType));
-        ratingsPayload = (currentTask.ratings || [])
+        
+        // 1. Add Roadway fixed parameters
+        const roadwayRatings = (currentTask.ratings || [])
           .filter(p => !skippedGroups.has(p.group))
           .map(p => ({
             parameterKey: p.parameterKey,
@@ -158,6 +160,17 @@ const InspectorApp = () => {
             score: Number(taskRatings[p.parameterKey]?.score ?? 10),
             remark: taskRatings[p.parameterKey]?.remark || ''
           }));
+          
+        // 2. Add RSF parameters (if any)
+        const rsfRatings = (currentTask.parameters || [])
+          .filter(p => !skippedGroups.has(p.assetType)) // Skip if the RSF asset type was skipped
+          .map(p => ({
+            masterListId: p._id,
+            score: Number(taskRatings[p._id]?.score ?? 10),
+            remark: taskRatings[p._id]?.remark || ''
+          }));
+          
+        ratingsPayload = [...roadwayRatings, ...rsfRatings];
       } else {
         ratingsPayload = (currentTask.parameters || []).map(p => ({
           masterListId: p._id,
@@ -572,48 +585,102 @@ const InspectorApp = () => {
 
           <div className="flex flex-col gap-6 w-full mb-0">
             {currentTask.category === 'Roadway' ? (
-              ['Pavement', 'Shoulder', 'Kerb', 'Pavement Markings'].map(group => {
-                const groupParams = (currentTask.ratings || []).filter(p => p.group === group);
-                if (groupParams.length === 0) return null;
-                const isSkipped = (currentTask.skippedAssetTypes || []).some(s => s.assetType === group);
-                return (
-                  <div key={group} className={`flex flex-col w-full ${isSkipped ? 'opacity-50 pointer-events-none' : ''}`}>
-                    <div className="flex items-center justify-between mb-3 pb-1 border-b-2 border-gray-200">
-                      <h3 className="text-md font-bold text-gray-700">{group} {isSkipped && '(SKIPPED)'}</h3>
-                      {!isSkipped && (
-                        <button
-                          onClick={() => {
-                            setSkipGroup(group);
-                            setSkipModalOpen(true);
-                          }}
-                          className="px-3 py-1 text-xs font-medium text-red-600 border border-red-200 bg-red-50 hover:bg-red-100 rounded-md transition-colors"
-                        >
-                          Skip Asset
-                        </button>
-                      )}
+              <>
+                {['Pavement', 'Shoulder', 'Kerb', 'Pavement Markings'].map(group => {
+                  const groupParams = (currentTask.ratings || []).filter(p => p.group === group);
+                  if (groupParams.length === 0) return null;
+                  const isSkipped = (currentTask.skippedAssetTypes || []).some(s => s.assetType === group);
+                  return (
+                    <div key={group} className={`flex flex-col w-full ${isSkipped ? 'opacity-50 pointer-events-none' : ''}`}>
+                      <div className="flex items-center justify-between mb-3 pb-1 border-b-2 border-gray-200">
+                        <h3 className="text-md font-bold text-gray-700">{group} {isSkipped && '(SKIPPED)'}</h3>
+                        {!isSkipped && (
+                          <button
+                            onClick={() => {
+                              setSkipGroup(group);
+                              setSkipModalOpen(true);
+                            }}
+                            className="px-3 py-1 text-xs font-medium text-red-600 border border-red-200 bg-red-50 hover:bg-red-100 rounded-md transition-colors"
+                          >
+                            Skip Asset
+                          </button>
+                        )}
+                      </div>
+                      <div className="flex flex-col xl:flex-row gap-6 w-full flex-wrap">
+                         {groupParams.map(param => renderParamCard(param))}
+                      </div>
                     </div>
-                    <div className="flex flex-col xl:flex-row gap-6 w-full flex-wrap">
-                       {groupParams.map(param => renderParamCard(param))}
-                    </div>
+                  );
+                })}
+                {/* Render RSF Additional Parameters if they exist */}
+                {currentTask.parameters && currentTask.parameters.length > 0 && (
+                  <div className="flex flex-col w-full mt-4">
+                    <h3 className="text-md font-bold text-gray-700 mb-3 pb-1 border-b-2 border-blue-200">RSF (Additional Features)</h3>
+                    {Object.entries(
+                      currentTask.parameters.reduce((acc, param) => {
+                        if (!acc[param.assetType]) acc[param.assetType] = [];
+                        acc[param.assetType].push(param);
+                        return acc;
+                      }, {})
+                    ).map(([rsfGroup, params]) => {
+                      const isSkipped = (currentTask.skippedAssetTypes || []).some(s => s.assetType === rsfGroup);
+                      return (
+                        <div key={rsfGroup} className={`flex flex-col w-full mb-4 ${isSkipped ? 'opacity-50 pointer-events-none' : ''}`}>
+                          <div className="flex items-center justify-between mb-3 pb-1 border-b border-gray-100">
+                            <h4 className="text-sm font-bold text-gray-600">{rsfGroup} {isSkipped && '(SKIPPED)'}</h4>
+                            {!isSkipped && (
+                              <button
+                                onClick={() => {
+                                  setSkipGroup(rsfGroup);
+                                  setSkipModalOpen(true);
+                                }}
+                                className="px-3 py-1 text-xs font-medium text-red-600 border border-red-200 bg-red-50 hover:bg-red-100 rounded-md transition-colors"
+                              >
+                                Skip {rsfGroup}
+                              </button>
+                            )}
+                          </div>
+                          <div className="flex flex-col xl:flex-row gap-6 w-full flex-wrap">
+                             {params.map(param => renderParamCard(param))}
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
-                );
-              })
-            ) : currentTask.assetType === 'Roadway' ? (
-              ['Kerb', 'Shoulder', 'Pavement'].map(group => {
-                const groupParams = (currentTask.parameters || []).filter(p => p.assetType === group);
-                if (groupParams.length === 0) return null;
-                return (
-                  <div key={group} className="flex flex-col w-full">
-                    <h3 className="text-md font-bold text-gray-700 mb-3 pb-1 border-b-2 border-gray-200">{group}</h3>
-                    <div className="flex flex-col xl:flex-row gap-6 w-full flex-wrap">
-                       {groupParams.map(param => renderParamCard(param))}
-                    </div>
-                  </div>
-                );
-              })
+                )}
+              </>
             ) : (
-              <div className="flex flex-col xl:flex-row gap-6 w-full flex-wrap">
-                {(currentTask.parameters || []).map(param => renderParamCard(param))}
+              <div className="flex flex-col w-full">
+                {Object.entries(
+                  (currentTask.parameters || []).reduce((acc, param) => {
+                    if (!acc[param.assetType]) acc[param.assetType] = [];
+                    acc[param.assetType].push(param);
+                    return acc;
+                  }, {})
+                ).map(([group, params]) => {
+                  const isSkipped = (currentTask.skippedAssetTypes || []).some(s => s.assetType === group);
+                  return (
+                    <div key={group} className={`flex flex-col w-full mb-4 ${isSkipped ? 'opacity-50 pointer-events-none' : ''}`}>
+                      <div className="flex items-center justify-between mb-3 pb-1 border-b-2 border-gray-200">
+                        <h3 className="text-md font-bold text-gray-700">{group} {isSkipped && '(SKIPPED)'}</h3>
+                        {!isSkipped && (
+                          <button
+                            onClick={() => {
+                              setSkipGroup(group);
+                              setSkipModalOpen(true);
+                            }}
+                            className="px-3 py-1 text-xs font-medium text-red-600 border border-red-200 bg-red-50 hover:bg-red-100 rounded-md transition-colors"
+                          >
+                            Skip {group}
+                          </button>
+                        )}
+                      </div>
+                      <div className="flex flex-col xl:flex-row gap-6 w-full flex-wrap">
+                         {params.map(param => renderParamCard(param))}
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             )}
 

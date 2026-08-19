@@ -113,10 +113,14 @@ class ReportService {
     tasks.forEach(t => {
       if (t.ratings && t.ratings.length > 0) {
         t.ratings.forEach(r => {
+          const isRoadway = t.category === 'Roadway' || t.assetType === 'Roadway';
+          const actualAssetType = (isRoadway && r.group) ? r.group : (t.assetType || 'Unknown');
+          const actualCategory = t.category || (isRoadway ? 'Roadway' : actualAssetType);
+
           allRatings.push({
             project: t.project,
-            category: t.category || t.assetType || 'Unknown',
-            assetType: t.assetType || 'Unknown',
+            category: actualCategory,
+            assetType: actualAssetType,
             chainage: t.chainage,
             direction: t.direction || '-',
             parameter: r.parameterName || r.parameterKey || 'Unknown',
@@ -385,8 +389,9 @@ class ReportService {
 
     const catMap = {};
     ratings.forEach(r => {
-      if(!catMap[r.category]) catMap[r.category] = { c:r.category, tot:0, sum:0, c1:0, c5:0, c10:0 };
-      const cm = catMap[r.category];
+      const catKey = r.category === 'Roadway' ? `Roadway → ${r.assetType}` : r.category;
+      if(!catMap[catKey]) catMap[catKey] = { c:catKey, tot:0, sum:0, c1:0, c5:0, c10:0 };
+      const cm = catMap[catKey];
       cm.tot++; cm.sum+=r.score;
       if(r.score===1) cm.c1++;
       if(r.score===5) cm.c5++;
